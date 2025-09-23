@@ -1,8 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OG Preview
+
+> The Go-To Hub for SEO Inspiration
+
+**🌐 Website:** [ogpreview.co](https://ogpreview.co)  
+**📖 Documentation:** See [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) for detailed project information  
+**📜 License:** MIT (See [LICENSE](./LICENSE))
+
+## About
+
+OG Preview is an open-source platform that serves as a comprehensive gallery and analysis tool for Open Graph images, meta tags, and SEO elements from popular websites. This project is designed to help developers, marketers, and SEO practitioners find inspiration and learn from successful SEO implementations across the web.
+
+### Key Features (Planned)
+
+- 🖼️ **OG Image Gallery** - Searchable collection of Open Graph images from popular websites
+- 🔍 **Advanced Search & Filtering** - Find websites by technology, region, company size, and more
+- 📊 **SEO Analysis Tools** - Free tools for checking and optimizing SEO elements
+- 📈 **Historical Tracking** - Monitor how websites evolve their SEO strategies over time
+- 🛠️ **User Submissions** - Community-driven content with quality control
+
+## Tech Stack
+
+- **Frontend:** Next.js 15 with App Router
+- **Styling:** Tailwind CSS with Geist font
+- **Infrastructure:** Cloudflare + Vercel
+- **Database:** TBD (likely Cloudflare D1)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm, yarn, pnpm, or bun
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/danvilhena/ogpreview.git
+cd ogpreview
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+# or
+bun install
+```
+
+3. Run the development server:
 
 ```bash
 npm run dev
@@ -14,23 +65,34 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Status
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project is in early development. See [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) for detailed roadmap and development phases.
 
-## Learn More
+## Contributing
 
-To learn more about Next.js, take a look at the following resources:
+We welcome contributions! This is an open-source project aimed at helping the SEO and web development community. Please feel free to:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Submit bug reports and feature requests
+- Contribute code improvements
+- Suggest new websites for the gallery
+- Improve documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Learning & Transparency
 
-## Deploy on Vercel
+This project serves as a learning platform for SEO and web development. We're committed to transparency and will share:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Monthly analytics and visitor statistics
+- Development decisions and learnings
+- SEO strategies and results
+- Open-source everything
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details. You are free to use this commercially, modify, and distribute as you see fit.
+
+---
+
+**Built with ❤️ by [Danilo Vilhena](https://github.com/danvilhena) for the SEO and web development community**
