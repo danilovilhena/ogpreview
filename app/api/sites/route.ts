@@ -4,13 +4,36 @@ import type { SiteFilters } from '@/lib/db/services/site-service';
 
 export const runtime = 'nodejs';
 
+// Helper function to extract only OG metadata and basic fields
+function filterMetadataResponse(siteData: any) {
+  if (!siteData.metadata) return siteData;
+
+  const { metadata } = siteData;
+
+  // Extract only the fields we want: title, description, and open_graph_metadata
+  const filteredMetadata = {
+    id: metadata.id,
+    site_id: metadata.site_id,
+    title: metadata.title,
+    description: metadata.description,
+    open_graph_metadata: metadata.open_graph_metadata,
+    scraped_at: metadata.scraped_at,
+    version: metadata.version,
+  };
+
+  return {
+    ...siteData,
+    metadata: filteredMetadata,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get('domain');
     const search = searchParams.get('search');
     const includeHistory = searchParams.get('includeHistory') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || '10000');
     const offset = parseInt(searchParams.get('offset') || '0');
     const getStats = searchParams.get('stats') === 'true';
 
@@ -149,8 +172,8 @@ export async function GET(request: NextRequest) {
       sites = sitesWithHistory;
     }
 
-    // Apply pagination
-    const paginatedSites = sites.slice(offset, offset + limit);
+    // Apply pagination and filter metadata
+    const paginatedSites = sites.slice(offset, offset + limit).map(filterMetadataResponse);
 
     const response = {
       success: true,

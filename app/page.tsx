@@ -1,7 +1,7 @@
 export default function Home() {
   return (
     <div className="min-h-screen">
-      <p>OG Preview</p>
+      <p>Content goes here</p>
     </div>
   );
 }
