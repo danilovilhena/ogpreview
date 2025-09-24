@@ -13,6 +13,7 @@ export interface ScrapingResult {
     contentLength: number;
   };
   error?: string;
+  info?: string;
 }
 
 export class ScrapingService {
@@ -62,6 +63,23 @@ export class ScrapingService {
       const responseTime = Date.now() - startTime;
       const metadata = extractMetadata(html, targetUrl);
       const scrapedAt = new Date().toISOString();
+
+      // Check if there's an OG image - early return if not
+      const hasOgImage = metadata.openGraph?.images && metadata.openGraph.images.length > 0;
+      if (!hasOgImage) {
+        return {
+          success: true,
+          url: targetUrl.toString(),
+          metadata,
+          scrapedAt,
+          saved: false,
+          performance: {
+            responseTime,
+            contentLength: html.length,
+          },
+          info: 'No Open Graph image found - not saved to database',
+        };
+      }
 
       // Save to database
       let saved = false;

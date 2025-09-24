@@ -1,0 +1,109 @@
+'use client';
+
+import Image from 'next/image';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { useRef, useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowUpRight, Globe } from 'lucide-react';
+
+export function SiteCard({ siteData }: { siteData: any }) {
+  const ogData = siteData?.open_graph_metadata || {};
+  const basicData = siteData?.basic_metadata || {};
+  const twitterData = siteData?.twitter_metadata || {};
+  const site = siteData?.site || {};
+  const siteUrl = site?.url || site?.domain?.domain;
+
+  const title = siteData?.title || ogData?.site_name || ogData?.title || basicData?.title;
+  const ogImage = ogData?.images?.[0] || twitterData?.images?.[0];
+  const faviconUrl = basicData?.favicon || `https://www.google.com/s2/favicons?domain=${siteUrl}&sz=32`;
+
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [isTitleTruncated, setIsTitleTruncated] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [showButton, setShowButton] = useState(false);
+
+  useEffect(() => {
+    if (titleRef.current) {
+      const element = titleRef.current;
+      setIsTitleTruncated(element.scrollWidth > element.clientWidth);
+    }
+  }, [title]);
+
+  const titleElement = (
+    <h3 ref={titleRef} className="font-medium text-gray-900 truncate flex-1">
+      {title}
+    </h3>
+  );
+
+  return (
+    <TooltipProvider>
+      <div className="block relative group" onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
+        {/* Full width OG Image or Placeholder */}
+        <div className="relative aspect-video w-full">
+          {ogImage && !imageError ? (
+            <Image
+              src={ogImage}
+              alt={title || 'Site preview'}
+              fill
+              className="object-cover rounded-md border"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center">
+              <div className="text-center">
+                <Globe className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No preview available</p>
+              </div>
+            </div>
+          )}
+
+          {/* Animated Arrow Link */}
+          <AnimatePresence>
+            {showButton && (
+              <motion.a
+                href={siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ type: 'spring', duration: 0.3, bounce: 0 }}
+                className="absolute top-2 right-2 p-1 bg-neutral-100 rounded-sm hover:bg-neutral-300 transition-colors z-10 cursor-pointer"
+              >
+                <ArrowUpRight className="w-4 h-4 text-gray-600" />
+              </motion.a>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Favicon and Title below image */}
+        <div className="flex items-center gap-2 mt-3">
+          <div className="relative size-5 flex-shrink-0">
+            <Image
+              src={faviconUrl}
+              alt={`${title} favicon`}
+              width={24}
+              height={24}
+              className="rounded"
+              onError={(e) => {
+                // Fallback if favicon fails to load
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+          {isTitleTruncated ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{titleElement}</TooltipTrigger>
+              <TooltipContent>
+                <p>{title}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            titleElement
+          )}
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}

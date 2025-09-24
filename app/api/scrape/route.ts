@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
         scrapedAt: result.scrapedAt,
         saved: result.saved,
         performance: result.performance,
+        info: result.info,
       },
       { headers: rateLimitHeaders },
     );

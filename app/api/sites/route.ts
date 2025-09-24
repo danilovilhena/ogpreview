@@ -16,81 +16,13 @@ type FilterableData = SiteData | SiteMetadataWithSite;
 
 export const runtime = 'nodejs';
 
-// Helper function to extract only OG metadata and basic fields
-function filterMetadataResponse(siteData: FilterableData): FilterableData {
-  // Handle SiteMetadataWithSite structure
-  if ('site' in siteData && !('metadata' in siteData)) {
-    const metadata = siteData as SiteMetadataWithSite;
-    const filteredMetadata: SiteMetadata = {
-      id: metadata.id,
-      site_id: metadata.site_id,
-      version: metadata.version,
-      title: metadata.title,
-      description: metadata.description,
-      basic_metadata: null,
-      open_graph_metadata: metadata.open_graph_metadata,
-      twitter_metadata: null,
-      structured_metadata: null,
-      images: null,
-      link_metadata: null,
-      other_metadata: null,
-      raw_metadata: null,
-      response_time: metadata.response_time,
-      content_length: metadata.content_length,
-      http_status: metadata.http_status,
-      scraped_at: metadata.scraped_at,
-      created_at: metadata.created_at,
-      is_latest: metadata.is_latest,
-    };
-
-    return {
-      ...metadata,
-      ...filteredMetadata,
-    } as SiteMetadataWithSite;
-  }
-
-  // Handle SiteData structure
-  const data = siteData as SiteData;
-  if (!data.metadata) return data;
-
-  const { metadata } = data;
-
-  // Extract only the fields we want: title, description, and open_graph_metadata
-  const filteredMetadata: SiteMetadata = {
-    id: metadata.id,
-    site_id: metadata.site_id,
-    version: metadata.version,
-    title: metadata.title,
-    description: metadata.description,
-    basic_metadata: null,
-    open_graph_metadata: metadata.open_graph_metadata,
-    twitter_metadata: null,
-    structured_metadata: null,
-    images: null,
-    link_metadata: null,
-    other_metadata: null,
-    raw_metadata: null,
-    response_time: metadata.response_time,
-    content_length: metadata.content_length,
-    http_status: metadata.http_status,
-    scraped_at: metadata.scraped_at,
-    created_at: metadata.created_at,
-    is_latest: metadata.is_latest,
-  };
-
-  return {
-    ...data,
-    metadata: filteredMetadata,
-  };
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get('domain');
     const search = searchParams.get('search');
     const includeHistory = searchParams.get('includeHistory') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const limit = parseInt(searchParams.get('limit') || '60');
     const offset = parseInt(searchParams.get('offset') || '0');
     const getStats = searchParams.get('stats') === 'true';
 
@@ -230,7 +162,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply pagination and filter metadata
-    const paginatedSites = sites.slice(offset, offset + limit).map(filterMetadataResponse);
+    const paginatedSites = sites.slice(offset, offset + limit);
 
     const response = {
       success: true,
