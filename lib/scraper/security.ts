@@ -49,29 +49,59 @@ async function resolveAndGuard(u: URL): Promise<void> {
   }
 }
 
+// Rotate between different realistic user agents
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+];
+
+function getRandomUserAgent(): string {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
+
 function buildClient() {
   return ky.create({
-    // Retry 429/5xx with exponential backoff, respect Retry-After if provided
+    // More aggressive retry for 403s and 429s
     retry: {
-      limit: 2,
+      limit: 4, // Increased from 2
       methods: ['get'],
-      statusCodes: [408, 429, 500, 502, 503, 504],
-      backoffLimit: 2000,
+      statusCodes: [403, 408, 429, 500, 502, 503, 504], // Added 403
+      backoffLimit: 8000, // Increased from 2000ms to 8000ms
+      delay: (attemptCount) => {
+        // Exponential backoff with jitter (500ms, 1s, 2s, 4s + random)
+        const baseDelay = Math.min(500 * Math.pow(2, attemptCount - 1), 8000);
+        const jitter = Math.random() * 1000; // Add up to 1s of random jitter
+        return baseDelay + jitter;
+      },
     },
-    timeout: 30000,
+    timeout: 45000, // Increased from 30s
     headers: {
-      // Friendly, identifiable UA
-      'User-Agent': 'Mozilla/5.0 (compatible; OGPreview/1.0; +https://ogpreview.co)',
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.5',
+      'User-Agent': getRandomUserAgent(),
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
       'Cache-Control': 'no-cache',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+      'Sec-Ch-Ua-Mobile': '?0',
+      'Sec-Ch-Ua-Platform': '"macOS"',
+      DNT: '1',
     },
     redirect: 'manual', // we'll follow redirects manually to re-run SSRF guards
     hooks: {
       beforeRetry: [
-        async ({ error }) => {
-          // Could add jitter logging/metrics here
-          console.log('Retrying request due to error:', error.message);
+        async ({ error, retryCount }) => {
+          console.log(`Retry ${retryCount} for request due to:`, error.message);
+
+          // Add a small random delay before retry to avoid thundering herd
+          const delay = Math.random() * 2000 + 1000; // 1-3 seconds
+          await new Promise((resolve) => setTimeout(resolve, delay));
         },
       ],
     },
@@ -79,6 +109,7 @@ function buildClient() {
 }
 
 export async function guardedFetchHtml(startUrl: URL): Promise<string> {
+  // Create a new client for each request to get fresh user agent rotation
   const client = buildClient();
 
   // Follow up to N redirects, re-checking each target
@@ -103,6 +134,33 @@ export async function guardedFetchHtml(startUrl: URL): Promise<string> {
   }
 
   if (!response) throw new Error('No response received.');
+
+  // Special handling for 403 - try once more with a different approach
+  if (response.status === 403) {
+    console.log('Got 403, trying with minimal headers...');
+
+    // Try again with minimal headers to bypass some bot detection
+    const minimalClient = ky.create({
+      timeout: 45000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'manual',
+    });
+
+    // Add a longer delay before the fallback attempt
+    await new Promise((resolve) => setTimeout(resolve, 3000 + Math.random() * 2000));
+
+    try {
+      response = await minimalClient.get(current.toString(), { throwHttpErrors: false });
+    } catch (fallbackError) {
+      console.log('Fallback attempt failed:', fallbackError);
+      // Continue with original error handling
+    }
+  }
+
   if (response.status >= 400) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }

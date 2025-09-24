@@ -67,20 +67,20 @@ export class MetadataService {
       await this.supabase.from('site_metadata').update({ is_latest: false }).eq('site_id', siteId);
     }
 
-    // Create new metadata record
+    // Create new metadata record with safe property access
     const newMetadata: SiteMetadataInsert = {
       site_id: siteId,
       version: nextVersion,
-      title: metadata.basic.title || metadata.openGraph.title || undefined,
-      description: metadata.basic.description || metadata.openGraph.description || undefined,
-      basic_metadata: JSON.stringify(metadata.basic),
-      open_graph_metadata: JSON.stringify(metadata.openGraph),
-      twitter_metadata: JSON.stringify(metadata.twitter),
-      structured_metadata: JSON.stringify(metadata.structured),
-      images: JSON.stringify(metadata.images),
-      link_metadata: JSON.stringify(metadata.links),
-      other_metadata: JSON.stringify(metadata.other),
-      raw_metadata: JSON.stringify(metadata.raw),
+      title: metadata.basic?.title || metadata.openGraph?.title || '',
+      description: metadata.basic?.description || metadata.openGraph?.description || '',
+      basic_metadata: JSON.stringify(metadata.basic || {}),
+      open_graph_metadata: JSON.stringify(metadata.openGraph || {}),
+      twitter_metadata: JSON.stringify(metadata.twitter || {}),
+      structured_metadata: JSON.stringify(metadata.structured || {}),
+      images: JSON.stringify(metadata.images || []),
+      link_metadata: JSON.stringify(metadata.links || {}),
+      other_metadata: JSON.stringify(metadata.other || {}),
+      raw_metadata: JSON.stringify(metadata.raw || {}),
       response_time: performance?.responseTime,
       content_length: performance?.contentLength,
       http_status: performance?.httpStatus,

@@ -45,3 +45,5 @@ export { resolveUrl, resolveUrls } from './url-resolver';
 export { cleanupMetadata } from './data-cleaner';
 export { guardedFetchHtml, handleScrapingError } from './security';
 export { checkRateLimit, getRateLimitHeaders } from './rate-limiter';
+export { ScrapingService, scrapingService } from './scraping-service';
+export type { ScrapingResult } from './scraping-service';

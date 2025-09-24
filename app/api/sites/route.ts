@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     const domain = searchParams.get('domain');
     const search = searchParams.get('search');
     const includeHistory = searchParams.get('includeHistory') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '10000');
+    const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
     const getStats = searchParams.get('stats') === 'true';
 
