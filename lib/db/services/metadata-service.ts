@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, SiteMetadata, SiteMetadataInsert } from '../types';
+import type { Database, SiteMetadata, SiteMetadataInsert, SiteMetadataWithSite } from '../types';
 import type { ScrapedMetadata } from '../../scraper/types';
 
 export class MetadataService {
@@ -8,7 +8,7 @@ export class MetadataService {
   /**
    * Parse JSON metadata fields into objects
    */
-  private parseMetadataFields(metadata: SiteMetadata): SiteMetadata {
+  private parseMetadataFields<T extends SiteMetadata>(metadata: T): T {
     const parsed = { ...metadata };
 
     // Helper function to safely parse JSON
@@ -23,14 +23,16 @@ export class MetadataService {
     };
 
     // Replace JSON string fields with parsed objects
-    (parsed as any).basic_metadata = safeJsonParse(metadata.basic_metadata);
-    (parsed as any).open_graph_metadata = safeJsonParse(metadata.open_graph_metadata);
-    (parsed as any).twitter_metadata = safeJsonParse(metadata.twitter_metadata);
-    (parsed as any).structured_metadata = safeJsonParse(metadata.structured_metadata);
-    (parsed as any).images = safeJsonParse(metadata.images);
-    (parsed as any).link_metadata = safeJsonParse(metadata.link_metadata);
-    (parsed as any).other_metadata = safeJsonParse(metadata.other_metadata);
-    (parsed as any).raw_metadata = safeJsonParse(metadata.raw_metadata);
+    Object.assign(parsed, {
+      basic_metadata: safeJsonParse(metadata.basic_metadata),
+      open_graph_metadata: safeJsonParse(metadata.open_graph_metadata),
+      twitter_metadata: safeJsonParse(metadata.twitter_metadata),
+      structured_metadata: safeJsonParse(metadata.structured_metadata),
+      images: safeJsonParse(metadata.images),
+      link_metadata: safeJsonParse(metadata.link_metadata),
+      other_metadata: safeJsonParse(metadata.other_metadata),
+      raw_metadata: safeJsonParse(metadata.raw_metadata),
+    });
 
     return parsed;
   }
@@ -107,7 +109,7 @@ export class MetadataService {
   /**
    * Get latest metadata for a site by URL
    */
-  async getLatestMetadataByUrl(url: string) {
+  async getLatestMetadataByUrl(url: string): Promise<SiteMetadataWithSite | null> {
     const { data } = await this.supabase
       .from('site_metadata')
       .select(
@@ -120,7 +122,7 @@ export class MetadataService {
       .eq('is_latest', true)
       .single();
 
-    return data ? this.parseMetadataFields(data) : null;
+    return data ? this.parseMetadataFields(data as SiteMetadataWithSite) : null;
   }
 
   /**
@@ -135,7 +137,7 @@ export class MetadataService {
   /**
    * Get all sites with their latest metadata
    */
-  async getAllSitesWithLatestMetadata() {
+  async getAllSitesWithLatestMetadata(): Promise<SiteMetadataWithSite[]> {
     const { data } = await this.supabase
       .from('site_metadata')
       .select(
@@ -147,7 +149,7 @@ export class MetadataService {
       .eq('is_latest', true)
       .order('scraped_at', { ascending: false });
 
-    return data ? data.map((metadata) => this.parseMetadataFields(metadata)) : [];
+    return data ? data.map((metadata) => this.parseMetadataFields(metadata as SiteMetadataWithSite)) : [];
   }
 
   /**
@@ -181,7 +183,7 @@ export class MetadataService {
   /**
    * Search sites by title or description
    */
-  async searchSites(query: string) {
+  async searchSites(query: string): Promise<SiteMetadataWithSite[]> {
     const { data } = await this.supabase
       .from('site_metadata')
       .select(
@@ -194,6 +196,6 @@ export class MetadataService {
       .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
       .order('scraped_at', { ascending: false });
 
-    return data ? data.map((metadata) => this.parseMetadataFields(metadata)) : [];
+    return data ? data.map((metadata) => this.parseMetadataFields(metadata as SiteMetadataWithSite)) : [];
   }
 }

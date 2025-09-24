@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     // Batch update sites
     const results = await Promise.allSettled(
-      sites.map(async (site: { siteId: number; classification: Partial<SiteUpdate>; isAiGenerated?: boolean }) => {
+      sites.map(async (site: { siteId: string; classification: Partial<SiteUpdate>; isAiGenerated?: boolean }) => {
         const { siteId, classification, isAiGenerated = true } = site;
         return siteService.updateSiteClassification(siteId, classification, isAiGenerated);
       }),
