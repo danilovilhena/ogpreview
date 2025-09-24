@@ -1,28 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase, SiteService, MetadataService } from '@/lib/db';
 import type { SiteFilters } from '@/lib/db/services/site-service';
+import type { SiteMetadata, Site, Domain, SiteMetadataWithSite } from '@/lib/db/types';
+
+// Type for the site data structure used in the API response
+interface SiteData {
+  metadata: SiteMetadata | null;
+  site: Site & { domain: Domain };
+  domain: Domain;
+  history?: SiteMetadata[];
+}
+
+// Union type for all possible data structures passed to filterMetadataResponse
+type FilterableData = SiteData | SiteMetadataWithSite;
 
 export const runtime = 'nodejs';
 
 // Helper function to extract only OG metadata and basic fields
-function filterMetadataResponse(siteData: any) {
-  if (!siteData.metadata) return siteData;
+function filterMetadataResponse(siteData: FilterableData): FilterableData {
+  // Handle SiteMetadataWithSite structure
+  if ('site' in siteData && !('metadata' in siteData)) {
+    const metadata = siteData as SiteMetadataWithSite;
+    const filteredMetadata: SiteMetadata = {
+      id: metadata.id,
+      site_id: metadata.site_id,
+      version: metadata.version,
+      title: metadata.title,
+      description: metadata.description,
+      basic_metadata: null,
+      open_graph_metadata: metadata.open_graph_metadata,
+      twitter_metadata: null,
+      structured_metadata: null,
+      images: null,
+      link_metadata: null,
+      other_metadata: null,
+      raw_metadata: null,
+      response_time: metadata.response_time,
+      content_length: metadata.content_length,
+      http_status: metadata.http_status,
+      scraped_at: metadata.scraped_at,
+      created_at: metadata.created_at,
+      is_latest: metadata.is_latest,
+    };
 
-  const { metadata } = siteData;
+    return {
+      ...metadata,
+      ...filteredMetadata,
+    } as SiteMetadataWithSite;
+  }
+
+  // Handle SiteData structure
+  const data = siteData as SiteData;
+  if (!data.metadata) return data;
+
+  const { metadata } = data;
 
   // Extract only the fields we want: title, description, and open_graph_metadata
-  const filteredMetadata = {
+  const filteredMetadata: SiteMetadata = {
     id: metadata.id,
     site_id: metadata.site_id,
+    version: metadata.version,
     title: metadata.title,
     description: metadata.description,
+    basic_metadata: null,
     open_graph_metadata: metadata.open_graph_metadata,
+    twitter_metadata: null,
+    structured_metadata: null,
+    images: null,
+    link_metadata: null,
+    other_metadata: null,
+    raw_metadata: null,
+    response_time: metadata.response_time,
+    content_length: metadata.content_length,
+    http_status: metadata.http_status,
     scraped_at: metadata.scraped_at,
-    version: metadata.version,
+    created_at: metadata.created_at,
+    is_latest: metadata.is_latest,
   };
 
   return {
-    ...siteData,
+    ...data,
     metadata: filteredMetadata,
   };
 }
