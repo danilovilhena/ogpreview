@@ -6,6 +6,7 @@ import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowUpRight, Globe } from 'lucide-react';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SiteCard({ siteData }: { siteData: any }) {
   const ogData = siteData?.open_graph_metadata || {};
   const basicData = siteData?.basic_metadata || {};
