@@ -43,3 +43,5 @@ export function extractMetadata(html: string, baseUrl: URL): ScrapedMetadata {
 export * from './types';
 export { resolveUrl, resolveUrls } from './url-resolver';
 export { cleanupMetadata } from './data-cleaner';
+export { guardedFetchHtml, handleScrapingError } from './security';
+export { checkRateLimit, getRateLimitHeaders } from './rate-limiter';
