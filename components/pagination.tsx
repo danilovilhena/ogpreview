@@ -21,7 +21,7 @@ export function Pagination({ currentPage, totalPages, hasMore }: PaginationProps
   const isLastPage = currentPage === totalPages || !hasMore;
 
   return (
-    <div className="flex justify-center items-center gap-2 mt-8">
+    <div className="flex justify-center items-center gap-2 mt-8 w-full max-w-full overflow-x-auto">
       {/* Previous Button */}
       <a
         href={isFirstPage ? undefined : `/?page=${currentPage - 1}`}

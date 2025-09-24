@@ -22,13 +22,16 @@ export default function Header() {
 
   return (
     <header className="w-full py-6 px-4">
-      <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1.5 text-2xl font-serif text-sky-600 italic font-medium hover:text-sky-700 transition-colors">
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 text-2xl font-serif text-sky-600 italic font-medium hover:text-sky-700 transition-colors flex-shrink-0"
+        >
           <Logo className="size-6" />
           ogpreview.co
         </Link>
 
-        <div className="relative w-full max-w-64">
+        <div className="relative w-full max-w-64 flex-shrink-0">
           <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-neutral-400 size-3" />
           <Input //
             type="search"

@@ -34,7 +34,6 @@ interface SitesGridProps {
 
 export async function SitesGrid({ page }: SitesGridProps) {
   const sitesData = await fetchSites(page);
-  console.log(sitesData);
 
   if (!sitesData.success || sitesData.data.length === 0) {
     return (
@@ -47,7 +46,7 @@ export async function SitesGrid({ page }: SitesGridProps) {
   const totalPages = Math.ceil(sitesData.pagination.total / sitesData.pagination.limit);
 
   return (
-    <>
+    <div className="w-full max-w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
         {sitesData.data.map((siteData) => (
           <SiteCard key={siteData.site.id} siteData={siteData} />
@@ -55,6 +54,6 @@ export async function SitesGrid({ page }: SitesGridProps) {
       </div>
 
       <Pagination currentPage={page} totalPages={totalPages} hasMore={sitesData.pagination.hasMore} />
-    </>
+    </div>
   );
 }
