@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, SiteMetadata, SiteMetadataInsert, SiteMetadataWithSite } from '../types';
 import type { ScrapedMetadata } from '../../scraper/types';
@@ -185,6 +187,22 @@ export class MetadataService {
       .order('scraped_at', { ascending: false });
 
     return data ? data.map((metadata) => this.parseMetadataFields(metadata as SiteMetadataWithSite)) : [];
+  }
+
+  /**
+   * Get the total count of sites that match the given filters
+   */
+  async getFilteredSitesCount(filters: any): Promise<number> {
+    let query = this.supabase.from('site_metadata').select('*', { count: 'exact', head: true }).eq('is_latest', true);
+
+    // Search in metadata (title, description) - simplified for now
+    if (filters.searchTerm) {
+      const searchTerm = filters.searchTerm.toLowerCase();
+      query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    }
+
+    const { count } = await query;
+    return count || 0;
   }
 
   /**

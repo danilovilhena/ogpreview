@@ -79,11 +79,16 @@ export async function GET(request: NextRequest) {
     let sites;
     let stats;
     let filterStats;
+    let totalCount = 0;
 
     if (domain) {
       // Legacy: Get sites for a specific domain
       sites = await getSitesForDomain(domain, siteService, metadataService);
+      totalCount = sites.length; // For domain-specific queries, use actual count
     } else {
+      // Get the total count for pagination
+      totalCount = await metadataService.getFilteredSitesCount(filters);
+
       // Always use the same method for consistency
       sites = await metadataService.getFilteredSitesWithMetadata(filters, limit, offset);
 
@@ -109,7 +114,7 @@ export async function GET(request: NextRequest) {
       stats,
       filterStats,
       appliedFilters: filters,
-      pagination: { total: sites.length, limit, offset, hasMore: sites.length === limit },
+      pagination: { total: totalCount, limit, offset, hasMore: sites.length === limit },
       legacy: { domain, search: searchParams.get('search'), includeHistory },
     };
 

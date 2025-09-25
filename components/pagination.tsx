@@ -1,12 +1,39 @@
 import Link from 'next/link';
 
+interface SearchParams {
+  search?: string;
+  industry?: string;
+  category?: string;
+  country?: string;
+  language?: string;
+  companySize?: string;
+}
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   hasMore: boolean;
+  searchParams?: SearchParams;
 }
 
-export function Pagination({ currentPage, totalPages, hasMore }: PaginationProps) {
+export function Pagination({ currentPage, totalPages, hasMore, searchParams }: PaginationProps) {
+  // Build URL with preserved search parameters
+  const buildUrl = (page: number) => {
+    const params = new URLSearchParams();
+    params.set('page', page.toString());
+
+    // Preserve all existing search parameters except page
+    if (searchParams) {
+      Object.entries(searchParams).forEach(([key, value]) => {
+        if (key !== 'page' && value) {
+          params.set(key, value);
+        }
+      });
+    }
+
+    return `/?${params.toString()}`;
+  };
+
   // Calculate page range to display (max 8 pages)
   const maxPagesToShow = 8;
   let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
@@ -26,7 +53,7 @@ export function Pagination({ currentPage, totalPages, hasMore }: PaginationProps
     <div className="flex justify-center items-center gap-2 mt-8 w-full max-w-full overflow-x-auto">
       {/* Previous Button */}
       <a
-        href={isFirstPage ? undefined : `/?page=${currentPage - 1}`}
+        href={isFirstPage ? undefined : buildUrl(currentPage - 1)}
         className={`size-7 flex items-center justify-center rounded-md transition-colors ${
           isFirstPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-neutral-100'
         }`}
@@ -40,7 +67,7 @@ export function Pagination({ currentPage, totalPages, hasMore }: PaginationProps
       {/* First page if not in range */}
       {startPage > 1 && (
         <>
-          <Link href="/?page=1" className="size-7 flex items-center justify-center rounded-md text-gray-700 hover:bg-neutral-100 transition-colors">
+          <Link href={buildUrl(1)} className="size-7 flex items-center justify-center rounded-md text-gray-700 hover:bg-neutral-100 transition-colors">
             1
           </Link>
           {startPage > 2 && <span className="px-2 text-gray-400">...</span>}
@@ -51,7 +78,7 @@ export function Pagination({ currentPage, totalPages, hasMore }: PaginationProps
       {pageNumbers.map((pageNum) => (
         <Link
           key={pageNum}
-          href={`/?page=${pageNum}`}
+          href={buildUrl(pageNum)}
           className={`size-7 flex items-center justify-center rounded-md text-[13px] transition-colors ${
             pageNum === currentPage ? 'bg-neutral-800 text-white' : 'text-gray-700 hover:bg-neutral-100'
           }`}
@@ -64,10 +91,7 @@ export function Pagination({ currentPage, totalPages, hasMore }: PaginationProps
       {endPage < totalPages && (
         <>
           {endPage < totalPages - 1 && <span className="px-2 text-gray-400">...</span>}
-          <Link
-            href={`/?page=${totalPages}`}
-            className="size-7 flex items-center justify-center rounded-md text-gray-700 hover:bg-neutral-100 transition-colors"
-          >
+          <Link href={buildUrl(totalPages)} className="size-7 flex items-center justify-center rounded-md text-gray-700 hover:bg-neutral-100 transition-colors">
             {totalPages}
           </Link>
         </>
@@ -75,7 +99,7 @@ export function Pagination({ currentPage, totalPages, hasMore }: PaginationProps
 
       {/* Next Button */}
       <a
-        href={isLastPage ? undefined : `/?page=${currentPage + 1}`}
+        href={isLastPage ? undefined : buildUrl(currentPage + 1)}
         className={`size-7 flex items-center justify-center rounded-md transition-colors ${
           isLastPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-neutral-100'
         }`}

@@ -78,7 +78,7 @@ export async function SitesGrid({ page, searchParams }: SitesGridProps) {
         ))}
       </div>
 
-      <Pagination currentPage={page} totalPages={totalPages} hasMore={sitesData.pagination.hasMore} />
+      <Pagination currentPage={page} totalPages={totalPages} hasMore={sitesData.pagination.hasMore} searchParams={searchParams} />
     </div>
   );
 }
