@@ -1,10 +1,11 @@
 'use client';
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ArrowUpRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { useRef, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ArrowUpRight, Globe } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import MemoizedImage from './site-card/memoized-image';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SiteCard({ siteData }: { siteData: any }) {
@@ -41,23 +42,7 @@ export function SiteCard({ siteData }: { siteData: any }) {
       <div className="block relative group" onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
         {/* Full width OG Image or Placeholder */}
         <div className="relative aspect-video w-full">
-          {ogImage && !imageError ? (
-            <Image
-              src={ogImage}
-              alt={title || 'Site preview'}
-              fill
-              className="object-cover rounded-md border"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <div className="w-full h-full rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-                <Globe className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No preview available</p>
-              </div>
-            </div>
-          )}
+          <MemoizedImage ogImage={ogImage} title={title} imageError={imageError} setImageError={setImageError} />
 
           {/* Animated Arrow Link */}
           <AnimatePresence>
@@ -70,7 +55,7 @@ export function SiteCard({ siteData }: { siteData: any }) {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
                 transition={{ type: 'spring', duration: 0.3, bounce: 0 }}
-                className="absolute top-2 right-2 p-1 bg-neutral-100 rounded-sm hover:bg-neutral-300 transition-colors z-10 cursor-pointer"
+                className="absolute top-2 right-2 p-1 bg-neutral-100 rounded-sm hover:bg-neutral-200 transition-colors z-10 cursor-pointer"
               >
                 <ArrowUpRight className="w-4 h-4 text-gray-600" />
               </motion.a>

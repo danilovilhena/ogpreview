@@ -171,6 +171,7 @@ export class MetadataService {
    * Search sites by title or description
    */
   async searchSites(query: string): Promise<SiteMetadataWithSite[]> {
+    const searchTerm = query.toLowerCase();
     const { data } = await this.supabase
       .from('site_metadata')
       .select(
@@ -180,8 +181,33 @@ export class MetadataService {
       `,
       )
       .eq('is_latest', true)
-      .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
       .order('scraped_at', { ascending: false });
+
+    return data ? data.map((metadata) => this.parseMetadataFields(metadata as SiteMetadataWithSite)) : [];
+  }
+
+  /**
+   * Get sites with metadata that match filters and search terms
+   */
+  async getFilteredSitesWithMetadata(filters: any, limit: number = 50, offset: number = 0): Promise<SiteMetadataWithSite[]> {
+    let query = this.supabase
+      .from('site_metadata')
+      .select(
+        `
+        *,
+        site:sites(*,domain:domains(*))
+      `,
+      )
+      .eq('is_latest', true);
+
+    // Search in metadata (title, description) - simplified for now
+    if (filters.searchTerm) {
+      const searchTerm = filters.searchTerm.toLowerCase();
+      query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    }
+
+    const { data } = await query.order('scraped_at', { ascending: false }).range(offset, offset + limit - 1);
 
     return data ? data.map((metadata) => this.parseMetadataFields(metadata as SiteMetadataWithSite)) : [];
   }

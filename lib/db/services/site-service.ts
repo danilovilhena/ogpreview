@@ -177,11 +177,10 @@ export class SiteService {
     if (filters.isAiClassified !== undefined) query = query.eq('is_ai_classified', filters.isAiClassified);
     if (filters.confidenceMin) query = query.gte('confidence', filters.confidenceMin);
 
-    // Search in URL, domain, title, industry, or category
+    // Search in URL, domain, title, industry, or category (case insensitive)
     if (filters.searchTerm) {
-      query = query.or(
-        `url.ilike.%${filters.searchTerm}%,title.ilike.%${filters.searchTerm}%,industry.ilike.%${filters.searchTerm}%,category.ilike.%${filters.searchTerm}%`,
-      );
+      const searchTerm = filters.searchTerm.toLowerCase();
+      query = query.or(`url.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,industry.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`);
     }
 
     const { data } = await query.order('updated_at', { ascending: false }).range(offset, offset + limit - 1);

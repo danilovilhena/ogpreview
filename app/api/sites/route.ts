@@ -38,27 +38,6 @@ async function getSitesForDomain(domain: string, siteService: SiteService, metad
   );
 }
 
-async function getFilteredSites(filters: SiteFilters, limit: number, offset: number, siteService: SiteService, metadataService: MetadataService) {
-  const filteredSites = await siteService.filterSites(filters, limit, offset);
-
-  return Promise.all(
-    filteredSites.map(async (siteWithDomain) => {
-      const metadata = await metadataService.getLatestMetadata(siteWithDomain.id);
-      return {
-        metadata,
-        site: siteWithDomain,
-        domain: siteWithDomain.domain,
-      };
-    }),
-  );
-}
-
-async function getAllSitesWithStats(metadataService: MetadataService) {
-  const sites = await metadataService.getAllSitesWithLatestMetadata();
-  const stats = await metadataService.getMetadataStats();
-  return { sites, stats };
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function addHistoryToSites(sites: any[], metadataService: MetadataService) {
   return Promise.all(
@@ -101,19 +80,17 @@ export async function GET(request: NextRequest) {
     let stats;
     let filterStats;
 
-    const hasFilters = Object.keys(filters).length > 0;
-
     if (domain) {
       // Legacy: Get sites for a specific domain
       sites = await getSitesForDomain(domain, siteService, metadataService);
-    } else if (hasFilters) {
-      // Use filtering system
-      sites = await getFilteredSites(filters, limit, offset, siteService, metadataService);
     } else {
-      // Default: Get all sites with stats
-      const result = await getAllSitesWithStats(metadataService);
-      sites = result.sites;
-      stats = result.stats;
+      // Always use the same method for consistency
+      sites = await metadataService.getFilteredSitesWithMetadata(filters, limit, offset);
+
+      // Only get stats if no filters are applied (for performance)
+      if (Object.keys(filters).length === 0) {
+        stats = await metadataService.getMetadataStats();
+      }
     }
 
     // Get filter statistics if requested
@@ -126,16 +103,13 @@ export async function GET(request: NextRequest) {
       sites = await addHistoryToSites(sites, metadataService);
     }
 
-    // Apply pagination only if not already handled by filtering
-    const paginatedSites = hasFilters ? sites : sites.slice(offset, offset + limit);
-
     const response = {
       success: true,
-      data: paginatedSites,
+      data: sites,
       stats,
       filterStats,
       appliedFilters: filters,
-      pagination: { total: sites.length, limit, offset, hasMore: offset + limit < sites.length },
+      pagination: { total: sites.length, limit, offset, hasMore: sites.length === limit },
       legacy: { domain, search: searchParams.get('search'), includeHistory },
     };
 

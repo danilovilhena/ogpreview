@@ -1,5 +1,6 @@
 import { LoadingSkeleton } from '@/components/loading-skeleton';
 import { SitesGrid } from '@/components/sites-grid';
+import { SearchBar } from '@/components/search-bar';
 import { Suspense } from 'react';
 
 interface HomeProps {
@@ -21,13 +22,14 @@ export default async function Home({ searchParams }: HomeProps) {
   return (
     <div className="w-full min-h-screen py-8 px-4">
       <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col items-center text-center gap-4 mt-8 mb-12">
+        <div className="flex flex-col items-center text-center gap-6 mt-8 mb-12">
           <h1 className="text-5xl max-w-3xl font-serif text-neutral-900 text-balance">
             The Ultimate <span className="text-sky-600 italic">Open Graph</span> Image Gallery
           </h1>
           <p className="text-neutral-500">Browse a curated gallery of OG images from top websites and discover what makes them stand out.</p>
+          <SearchBar />
         </div>
-        <Suspense fallback={<LoadingSkeleton />}>
+        <Suspense key={`${params.search || ''}-${page}`} fallback={<LoadingSkeleton />}>
           <SitesGrid page={page} searchParams={params} />
         </Suspense>
       </div>
