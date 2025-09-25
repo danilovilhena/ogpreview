@@ -23,30 +23,56 @@ export const INDUSTRIES = [
   'Other',
 ] as const;
 
-export const SECTORS = ['B2B', 'B2C', 'B2B2C', 'Government', 'Non-profit'] as const;
-
-export const BUSINESS_MODELS = ['SaaS', 'Marketplace', 'E-commerce', 'Media', 'Service', 'API', 'Platform', 'Tool'] as const;
-
-export const COMPANY_STAGES = ['Startup', 'Scaleup', 'Enterprise', 'Public', 'Acquired'] as const;
-
 export const COMPANY_SIZES = ['Startup (1-10)', 'Small (11-50)', 'Medium (51-200)', 'Large (201-1000)', 'Enterprise (1000+)'] as const;
 
-export const FUNDING_STAGES = ['Pre-seed', 'Seed', 'Series A', 'Series B', 'Series C+', 'IPO', 'Acquired', 'Bootstrapped'] as const;
+export const CATEGORIES = [
+  // Communication & Collaboration
+  'Email Marketing',
+  'Communication',
+  'Video Conferencing',
+  'Team Collaboration',
 
-export const SITE_TYPES = [
-  'Corporate',
-  'Product',
-  'Blog',
-  'E-commerce',
-  'Portfolio',
-  'Documentation',
-  'Landing Page',
-  'Directory',
-  'News',
-  'Community',
+  // Business Operations
+  'CRM Software',
+  'Project Management',
+  'HR Software',
+  'Accounting',
+  'Customer Support',
+
+  // Development & Design
+  'Design Tools',
+  'Code Editor',
+  'Development Tools',
+  'API Tools',
+
+  // Marketing & Sales
+  'Social Media Management',
+  'SEO Tools',
+  'Analytics',
+  'Landing Page Builder',
+
+  // AI & Automation
+  'AI Writing Tools',
+  'Automation',
+  'AI Assistant',
+  'Machine Learning',
+
+  // E-commerce & Finance
+  'E-commerce Platform',
+  'Payment Processing',
+  'Invoicing',
+  'Subscription Management',
+
+  // Productivity & Utilities
+  'File Storage',
+  'Password Management',
+  'Note Taking',
+  'Time Tracking',
+  'VPN',
+
+  // Other
+  'Other',
 ] as const;
-
-export const PRICING_MODELS = ['Free', 'Freemium', 'Subscription', 'One-time', 'Custom', 'Contact'] as const;
 
 export interface Database {
   public: {
@@ -78,36 +104,12 @@ export interface Database {
           domain_id: string;
           url: string;
           path: string;
+          title: string | null;
           industry: string | null;
-          sector: string | null;
-          business_model: string | null;
-          company_stage: string | null;
+          category: string | null;
           country: string | null;
-          region: string | null;
-          city: string | null;
           language: string | null;
-          market_focus: string | null;
           company_size: string | null;
-          employee_count: number | null;
-          revenue: string | null;
-          funding_stage: string | null;
-          total_funding: string | null;
-          platform: string | null;
-          hosting_provider: string | null;
-          cdn_provider: string | null;
-          site_type: string | null;
-          content_category: string | null;
-          primary_cta: string | null;
-          monetization: string | null;
-          traffic_tier: string | null;
-          domain_authority: number | null;
-          has_ecommerce: boolean;
-          has_blog: boolean;
-          has_newsletter_signup: boolean;
-          has_chatbot: boolean;
-          competitor_tier: string | null;
-          pricing_model: string | null;
-          target_audience: string | null;
           is_verified: boolean;
           is_ai_classified: boolean;
           confidence: number | null;
@@ -120,36 +122,12 @@ export interface Database {
           domain_id: string;
           url: string;
           path: string;
+          title?: string | null;
           industry?: string | null;
-          sector?: string | null;
-          business_model?: string | null;
-          company_stage?: string | null;
+          category?: string | null;
           country?: string | null;
-          region?: string | null;
-          city?: string | null;
           language?: string | null;
-          market_focus?: string | null;
           company_size?: string | null;
-          employee_count?: number | null;
-          revenue?: string | null;
-          funding_stage?: string | null;
-          total_funding?: string | null;
-          platform?: string | null;
-          hosting_provider?: string | null;
-          cdn_provider?: string | null;
-          site_type?: string | null;
-          content_category?: string | null;
-          primary_cta?: string | null;
-          monetization?: string | null;
-          traffic_tier?: string | null;
-          domain_authority?: number | null;
-          has_ecommerce?: boolean;
-          has_blog?: boolean;
-          has_newsletter_signup?: boolean;
-          has_chatbot?: boolean;
-          competitor_tier?: string | null;
-          pricing_model?: string | null;
-          target_audience?: string | null;
           is_verified?: boolean;
           is_ai_classified?: boolean;
           confidence?: number | null;
@@ -162,36 +140,12 @@ export interface Database {
           domain_id?: string;
           url?: string;
           path?: string;
+          title?: string | null;
           industry?: string | null;
-          sector?: string | null;
-          business_model?: string | null;
-          company_stage?: string | null;
+          category?: string | null;
           country?: string | null;
-          region?: string | null;
-          city?: string | null;
           language?: string | null;
-          market_focus?: string | null;
           company_size?: string | null;
-          employee_count?: number | null;
-          revenue?: string | null;
-          funding_stage?: string | null;
-          total_funding?: string | null;
-          platform?: string | null;
-          hosting_provider?: string | null;
-          cdn_provider?: string | null;
-          site_type?: string | null;
-          content_category?: string | null;
-          primary_cta?: string | null;
-          monetization?: string | null;
-          traffic_tier?: string | null;
-          domain_authority?: number | null;
-          has_ecommerce?: boolean;
-          has_blog?: boolean;
-          has_newsletter_signup?: boolean;
-          has_chatbot?: boolean;
-          competitor_tier?: string | null;
-          pricing_model?: string | null;
-          target_audience?: string | null;
           is_verified?: boolean;
           is_ai_classified?: boolean;
           confidence?: number | null;
@@ -219,14 +173,8 @@ export interface Database {
           basic_metadata: string | null;
           open_graph_metadata: string | null;
           twitter_metadata: string | null;
-          structured_metadata: string | null;
-          images: string | null;
-          link_metadata: string | null;
-          other_metadata: string | null;
+          ld_json_metadata: string | null;
           raw_metadata: string | null;
-          response_time: number | null;
-          content_length: number | null;
-          http_status: number | null;
           scraped_at: string;
           created_at: string;
           is_latest: boolean;
@@ -240,14 +188,8 @@ export interface Database {
           basic_metadata?: string | null;
           open_graph_metadata?: string | null;
           twitter_metadata?: string | null;
-          structured_metadata?: string | null;
-          images?: string | null;
-          link_metadata?: string | null;
-          other_metadata?: string | null;
+          ld_json_metadata?: string | null;
           raw_metadata?: string | null;
-          response_time?: number | null;
-          content_length?: number | null;
-          http_status?: number | null;
           scraped_at: string;
           created_at?: string;
           is_latest?: boolean;
@@ -261,14 +203,8 @@ export interface Database {
           basic_metadata?: string | null;
           open_graph_metadata?: string | null;
           twitter_metadata?: string | null;
-          structured_metadata?: string | null;
-          images?: string | null;
-          link_metadata?: string | null;
-          other_metadata?: string | null;
+          ld_json_metadata?: string | null;
           raw_metadata?: string | null;
-          response_time?: number | null;
-          content_length?: number | null;
-          http_status?: number | null;
           scraped_at?: string;
           created_at?: string;
           is_latest?: boolean;

@@ -1,53 +1,14 @@
 import type { Database, Domain, Site, SiteUpdate } from '@/lib/db/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Filter interface for comprehensive site filtering
+// Filter interface for streamlined site filtering
 export interface SiteFilters {
-  // Business Classification
+  // Essential classification
   industry?: string;
-  sector?: string;
-  businessModel?: string;
-  companyStage?: string;
-
-  // Geographic & Market
+  category?: string;
   country?: string;
-  region?: string;
-  city?: string;
   language?: string;
-  marketFocus?: string;
-
-  // Company Size & Scale
   companySize?: string;
-  employeeCountMin?: number;
-  employeeCountMax?: number;
-  revenue?: string;
-  fundingStage?: string;
-  totalFunding?: string;
-
-  // Technology & Platform
-  platform?: string;
-  hostingProvider?: string;
-  cdnProvider?: string;
-
-  // Content & Purpose
-  siteType?: string;
-  contentCategory?: string;
-  primaryCta?: string;
-  monetization?: string;
-
-  // SEO & Marketing
-  trafficTier?: string;
-  domainAuthorityMin?: number;
-  domainAuthorityMax?: number;
-  hasEcommerce?: boolean;
-  hasBlog?: boolean;
-  hasNewsletterSignup?: boolean;
-  hasChatbot?: boolean;
-
-  // Competitive Intelligence
-  competitorTier?: string;
-  pricingModel?: string;
-  targetAudience?: string;
 
   // Data Quality
   isVerified?: boolean;
@@ -196,7 +157,7 @@ export class SiteService {
   }
 
   /**
-   * Filter sites with comprehensive filtering for programmatic SEO
+   * Filter sites with streamlined filtering for SaaS products
    */
   async filterSites(filters: SiteFilters, limit: number = 50, offset: number = 0) {
     let query = this.supabase.from('sites').select(`
@@ -204,53 +165,23 @@ export class SiteService {
         domain:domains(*)
       `);
 
-    // Apply filters
+    // Apply filters for essential fields
     if (filters.industry) query = query.eq('industry', filters.industry);
-    if (filters.sector) query = query.eq('sector', filters.sector);
-    if (filters.businessModel) query = query.eq('business_model', filters.businessModel);
-    if (filters.companyStage) query = query.eq('company_stage', filters.companyStage);
-
+    if (filters.category) query = query.eq('category', filters.category);
     if (filters.country) query = query.eq('country', filters.country);
-    if (filters.region) query = query.eq('region', filters.region);
-    if (filters.city) query = query.eq('city', filters.city);
     if (filters.language) query = query.eq('language', filters.language);
-    if (filters.marketFocus) query = query.eq('market_focus', filters.marketFocus);
-
     if (filters.companySize) query = query.eq('company_size', filters.companySize);
-    if (filters.employeeCountMin) query = query.gte('employee_count', filters.employeeCountMin);
-    if (filters.employeeCountMax) query = query.lte('employee_count', filters.employeeCountMax);
-    if (filters.revenue) query = query.eq('revenue', filters.revenue);
-    if (filters.fundingStage) query = query.eq('funding_stage', filters.fundingStage);
-    if (filters.totalFunding) query = query.eq('total_funding', filters.totalFunding);
 
-    if (filters.platform) query = query.eq('platform', filters.platform);
-    if (filters.hostingProvider) query = query.eq('hosting_provider', filters.hostingProvider);
-    if (filters.cdnProvider) query = query.eq('cdn_provider', filters.cdnProvider);
-
-    if (filters.siteType) query = query.eq('site_type', filters.siteType);
-    if (filters.contentCategory) query = query.eq('content_category', filters.contentCategory);
-    if (filters.primaryCta) query = query.eq('primary_cta', filters.primaryCta);
-    if (filters.monetization) query = query.eq('monetization', filters.monetization);
-
-    if (filters.trafficTier) query = query.eq('traffic_tier', filters.trafficTier);
-    if (filters.domainAuthorityMin) query = query.gte('domain_authority', filters.domainAuthorityMin);
-    if (filters.domainAuthorityMax) query = query.lte('domain_authority', filters.domainAuthorityMax);
-    if (filters.hasEcommerce !== undefined) query = query.eq('has_ecommerce', filters.hasEcommerce);
-    if (filters.hasBlog !== undefined) query = query.eq('has_blog', filters.hasBlog);
-    if (filters.hasNewsletterSignup !== undefined) query = query.eq('has_newsletter_signup', filters.hasNewsletterSignup);
-    if (filters.hasChatbot !== undefined) query = query.eq('has_chatbot', filters.hasChatbot);
-
-    if (filters.competitorTier) query = query.eq('competitor_tier', filters.competitorTier);
-    if (filters.pricingModel) query = query.eq('pricing_model', filters.pricingModel);
-    if (filters.targetAudience) query = query.eq('target_audience', filters.targetAudience);
-
+    // Data quality filters
     if (filters.isVerified !== undefined) query = query.eq('is_verified', filters.isVerified);
     if (filters.isAiClassified !== undefined) query = query.eq('is_ai_classified', filters.isAiClassified);
     if (filters.confidenceMin) query = query.gte('confidence', filters.confidenceMin);
 
-    // Search in URL, domain, or any text fields
+    // Search in URL, domain, title, industry, or category
     if (filters.searchTerm) {
-      query = query.or(`url.ilike.%${filters.searchTerm}%,industry.ilike.%${filters.searchTerm}%,site_type.ilike.%${filters.searchTerm}%`);
+      query = query.or(
+        `url.ilike.%${filters.searchTerm}%,title.ilike.%${filters.searchTerm}%,industry.ilike.%${filters.searchTerm}%,category.ilike.%${filters.searchTerm}%`,
+      );
     }
 
     const { data } = await query.order('updated_at', { ascending: false }).range(offset, offset + limit - 1);
@@ -265,13 +196,25 @@ export class SiteService {
     // Get counts for each filter category using Supabase's aggregate functions
     const { data: industryStats } = await this.supabase.from('sites').select('industry').not('industry', 'is', null);
 
+    const { data: categoryStats } = await this.supabase.from('sites').select('category').not('category', 'is', null);
+
     const { data: countryStats } = await this.supabase.from('sites').select('country').not('country', 'is', null);
 
-    const { data: siteTypeStats } = await this.supabase.from('sites').select('site_type').not('site_type', 'is', null);
+    const { data: languageStats } = await this.supabase.from('sites').select('language').not('language', 'is', null);
+
+    const { data: companySizeStats } = await this.supabase.from('sites').select('company_size').not('company_size', 'is', null);
 
     // Count occurrences manually (Supabase doesn't have built-in aggregation like SQL GROUP BY)
     const industries = industryStats?.reduce((acc: Record<string, number>, item) => {
       const value = item.industry;
+      if (value) {
+        acc[value] = (acc[value] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const categories = categoryStats?.reduce((acc: Record<string, number>, item) => {
+      const value = item.category;
       if (value) {
         acc[value] = (acc[value] || 0) + 1;
       }
@@ -286,8 +229,16 @@ export class SiteService {
       return acc;
     }, {});
 
-    const siteTypes = siteTypeStats?.reduce((acc: Record<string, number>, item) => {
-      const value = item.site_type;
+    const languages = languageStats?.reduce((acc: Record<string, number>, item) => {
+      const value = item.language;
+      if (value) {
+        acc[value] = (acc[value] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const companySizes = companySizeStats?.reduce((acc: Record<string, number>, item) => {
+      const value = item.company_size;
       if (value) {
         acc[value] = (acc[value] || 0) + 1;
       }
@@ -296,8 +247,10 @@ export class SiteService {
 
     return {
       industries: Object.entries(industries || {}).map(([value, count]) => ({ value, count })),
+      categories: Object.entries(categories || {}).map(([value, count]) => ({ value, count })),
       countries: Object.entries(countries || {}).map(([value, count]) => ({ value, count })),
-      siteTypes: Object.entries(siteTypes || {}).map(([value, count]) => ({ value, count })),
+      languages: Object.entries(languages || {}).map(([value, count]) => ({ value, count })),
+      companySizes: Object.entries(companySizes || {}).map(([value, count]) => ({ value, count })),
     };
   }
 

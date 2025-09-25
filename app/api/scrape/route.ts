@@ -1,35 +1,40 @@
+import { checkRateLimit } from '@/lib/scraper/check-rate-limit';
+import { scrapeUrl } from '@/lib/scraper';
 import { NextRequest, NextResponse } from 'next/server';
-import { scrapingService, checkRateLimit, getRateLimitHeaders } from '@/lib/scraper';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
-  // Check rate limit first
-  const { allowed, remaining, resetTime } = checkRateLimit(request);
-  const rateLimitHeaders = getRateLimitHeaders(remaining, resetTime);
-
-  if (!allowed) {
-    return NextResponse.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429, headers: rateLimitHeaders });
-  }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const validateBody = async (request: NextRequest): Promise<{ success: boolean; error?: string; body?: any; status?: number }> => {
+  let body;
 
   try {
-    const body = await request.json();
-    const key = body?.key;
-    const url = body?.url;
+    body = await request.json();
+  } catch {
+    return { success: false, error: 'Invalid request body', status: 400 };
+  }
 
-    if (!key || !url) {
-      return NextResponse.json({ error: 'Missing key or url in request body' }, { status: 400 });
-    }
-    if (key !== process.env.SCRAPE_SECRET) {
-      return NextResponse.json({ error: 'Forbidden: Invalid authentication key' }, { status: 403 });
-    }
+  if (!body?.key || !body?.url) {
+    return { success: false, error: 'Missing key or url in request body', status: 400 };
+  }
+  if (body.key !== process.env.SCRAPE_SECRET) {
+    return { success: false, error: 'Forbidden: Invalid authentication key', status: 403 };
+  }
+  return { success: true, body };
+};
 
-    // Use the scraping service to handle the URL
-    const result = await scrapingService.scrapeUrl(url);
+export async function POST(request: NextRequest) {
+  const rateLimit = checkRateLimit(request);
+  if (!rateLimit.allowed) return NextResponse.json({ ...rateLimit.error }, { ...rateLimit.errorBody });
 
+  try {
+    const { success, error, body, status } = await validateBody(request);
+    if (!success) return NextResponse.json({ error }, { status });
+
+    const result = await scrapeUrl(body?.url);
     if (!result.success) {
       const status = result.error === 'Invalid URL format' ? 400 : 500;
-      return NextResponse.json({ error: result.error }, { status, headers: rateLimitHeaders });
+      return NextResponse.json({ error: result.error }, { status, headers: rateLimit.headers });
     }
 
     return NextResponse.json(
@@ -42,12 +47,11 @@ export async function POST(request: NextRequest) {
         performance: result.performance,
         info: result.info,
       },
-      { headers: rateLimitHeaders },
+      { headers: rateLimit.headers },
     );
   } catch (error: unknown) {
     console.error('Scraping error:', error);
-
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: errorMessage }, { status: 500, headers: rateLimitHeaders });
+    return NextResponse.json({ error: errorMessage }, { status: 500, headers: rateLimit.headers });
   }
 }

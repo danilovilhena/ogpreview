@@ -1,89 +1,91 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase, SiteService, MetadataService } from '@/lib/db';
+import { getSupabase, MetadataService, SiteService } from '@/lib/db';
 import type { SiteFilters } from '@/lib/db/services/site-service';
-import type { SiteMetadata, Site, Domain, SiteMetadataWithSite } from '@/lib/db/types';
+import { NextRequest, NextResponse } from 'next/server';
 
-// Type for the site data structure used in the API response
-interface SiteData {
-  metadata: SiteMetadata | null;
-  site: Site & { domain: Domain };
-  domain: Domain;
-  history?: SiteMetadata[];
+export const runtime = 'edge';
+
+function parseFiltersFromSearchParams(searchParams: URLSearchParams): SiteFilters {
+  const filters: SiteFilters = {};
+
+  if (searchParams.get('industry')) filters.industry = searchParams.get('industry')!;
+  if (searchParams.get('category')) filters.category = searchParams.get('category')!;
+  if (searchParams.get('country')) filters.country = searchParams.get('country')!;
+  if (searchParams.get('language')) filters.language = searchParams.get('language')!;
+  if (searchParams.get('companySize')) filters.companySize = searchParams.get('companySize')!;
+
+  if (searchParams.get('isVerified')) filters.isVerified = searchParams.get('isVerified') === 'true';
+  if (searchParams.get('isAiClassified')) filters.isAiClassified = searchParams.get('isAiClassified') === 'true';
+  if (searchParams.get('confidenceMin')) filters.confidenceMin = parseFloat(searchParams.get('confidenceMin')!);
+
+  const search = searchParams.get('search');
+  if (search) filters.searchTerm = search;
+
+  return filters;
 }
 
-// Union type for all possible data structures passed to filterMetadataResponse
-type FilterableData = SiteData | SiteMetadataWithSite;
+async function getSitesForDomain(domain: string, siteService: SiteService, metadataService: MetadataService) {
+  const sitesWithDomains = await siteService.getSitesByDomain(domain);
 
-export const runtime = 'nodejs';
+  return Promise.all(
+    sitesWithDomains.map(async (siteWithDomain) => {
+      const metadata = await metadataService.getLatestMetadata(siteWithDomain.id);
+      return {
+        metadata,
+        site: siteWithDomain,
+        domain: siteWithDomain.domain,
+      };
+    }),
+  );
+}
+
+async function getFilteredSites(filters: SiteFilters, limit: number, offset: number, siteService: SiteService, metadataService: MetadataService) {
+  const filteredSites = await siteService.filterSites(filters, limit, offset);
+
+  return Promise.all(
+    filteredSites.map(async (siteWithDomain) => {
+      const metadata = await metadataService.getLatestMetadata(siteWithDomain.id);
+      return {
+        metadata,
+        site: siteWithDomain,
+        domain: siteWithDomain.domain,
+      };
+    }),
+  );
+}
+
+async function getAllSitesWithStats(metadataService: MetadataService) {
+  const sites = await metadataService.getAllSitesWithLatestMetadata();
+  const stats = await metadataService.getMetadataStats();
+  return { sites, stats };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function addHistoryToSites(sites: any[], metadataService: MetadataService) {
+  return Promise.all(
+    sites.map(async (siteData) => {
+      if (siteData.site) {
+        const history = await metadataService.getMetadataHistory(siteData.site.id);
+        return {
+          ...siteData,
+          history: history.filter((h) => !h.is_latest), // Exclude current version from history
+        };
+      }
+      return siteData;
+    }),
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get('domain');
-    const search = searchParams.get('search');
     const includeHistory = searchParams.get('includeHistory') === 'true';
     const limit = parseInt(searchParams.get('limit') || '60');
     const offset = parseInt(searchParams.get('offset') || '0');
     const getStats = searchParams.get('stats') === 'true';
 
-    // Build comprehensive filters from query parameters
-    const filters: SiteFilters = {};
+    const filters = parseFiltersFromSearchParams(searchParams);
 
-    // Business Classification
-    if (searchParams.get('industry')) filters.industry = searchParams.get('industry')!;
-    if (searchParams.get('sector')) filters.sector = searchParams.get('sector')!;
-    if (searchParams.get('businessModel')) filters.businessModel = searchParams.get('businessModel')!;
-    if (searchParams.get('companyStage')) filters.companyStage = searchParams.get('companyStage')!;
-
-    // Geographic & Market
-    if (searchParams.get('country')) filters.country = searchParams.get('country')!;
-    if (searchParams.get('region')) filters.region = searchParams.get('region')!;
-    if (searchParams.get('city')) filters.city = searchParams.get('city')!;
-    if (searchParams.get('language')) filters.language = searchParams.get('language')!;
-    if (searchParams.get('marketFocus')) filters.marketFocus = searchParams.get('marketFocus')!;
-
-    // Company Size & Scale
-    if (searchParams.get('companySize')) filters.companySize = searchParams.get('companySize')!;
-    if (searchParams.get('employeeCountMin')) filters.employeeCountMin = parseInt(searchParams.get('employeeCountMin')!);
-    if (searchParams.get('employeeCountMax')) filters.employeeCountMax = parseInt(searchParams.get('employeeCountMax')!);
-    if (searchParams.get('revenue')) filters.revenue = searchParams.get('revenue')!;
-    if (searchParams.get('fundingStage')) filters.fundingStage = searchParams.get('fundingStage')!;
-    if (searchParams.get('totalFunding')) filters.totalFunding = searchParams.get('totalFunding')!;
-
-    // Technology & Platform
-    if (searchParams.get('platform')) filters.platform = searchParams.get('platform')!;
-    if (searchParams.get('hostingProvider')) filters.hostingProvider = searchParams.get('hostingProvider')!;
-    if (searchParams.get('cdnProvider')) filters.cdnProvider = searchParams.get('cdnProvider')!;
-
-    // Content & Purpose
-    if (searchParams.get('siteType')) filters.siteType = searchParams.get('siteType')!;
-    if (searchParams.get('contentCategory')) filters.contentCategory = searchParams.get('contentCategory')!;
-    if (searchParams.get('primaryCta')) filters.primaryCta = searchParams.get('primaryCta')!;
-    if (searchParams.get('monetization')) filters.monetization = searchParams.get('monetization')!;
-
-    // SEO & Marketing
-    if (searchParams.get('trafficTier')) filters.trafficTier = searchParams.get('trafficTier')!;
-    if (searchParams.get('domainAuthorityMin')) filters.domainAuthorityMin = parseInt(searchParams.get('domainAuthorityMin')!);
-    if (searchParams.get('domainAuthorityMax')) filters.domainAuthorityMax = parseInt(searchParams.get('domainAuthorityMax')!);
-    if (searchParams.get('hasEcommerce')) filters.hasEcommerce = searchParams.get('hasEcommerce') === 'true';
-    if (searchParams.get('hasBlog')) filters.hasBlog = searchParams.get('hasBlog') === 'true';
-    if (searchParams.get('hasNewsletterSignup')) filters.hasNewsletterSignup = searchParams.get('hasNewsletterSignup') === 'true';
-    if (searchParams.get('hasChatbot')) filters.hasChatbot = searchParams.get('hasChatbot') === 'true';
-
-    // Competitive Intelligence
-    if (searchParams.get('competitorTier')) filters.competitorTier = searchParams.get('competitorTier')!;
-    if (searchParams.get('pricingModel')) filters.pricingModel = searchParams.get('pricingModel')!;
-    if (searchParams.get('targetAudience')) filters.targetAudience = searchParams.get('targetAudience')!;
-
-    // Data Quality
-    if (searchParams.get('isVerified')) filters.isVerified = searchParams.get('isVerified') === 'true';
-    if (searchParams.get('isAiClassified')) filters.isAiClassified = searchParams.get('isAiClassified') === 'true';
-    if (searchParams.get('confidenceMin')) filters.confidenceMin = parseFloat(searchParams.get('confidenceMin')!);
-
-    // Search
-    if (search) filters.searchTerm = search;
-
-    // Initialize database connection
     let supabase;
     try {
       supabase = getSupabase();
@@ -91,6 +93,7 @@ export async function GET(request: NextRequest) {
       console.error('Database initialization failed:', error);
       return NextResponse.json({ error: 'Database not available. Make sure Supabase is properly configured.' }, { status: 503 });
     }
+
     const siteService = new SiteService(supabase);
     const metadataService = new MetadataService(supabase);
 
@@ -98,45 +101,19 @@ export async function GET(request: NextRequest) {
     let stats;
     let filterStats;
 
-    // Check if we have any filters or specific domain
     const hasFilters = Object.keys(filters).length > 0;
 
     if (domain) {
-      // Legacy: Get sites for a specific domain (maintain backward compatibility)
-      const sitesWithDomains = await siteService.getSitesByDomain(domain);
-
-      // Get latest metadata for each site
-      sites = await Promise.all(
-        sitesWithDomains.map(async (siteWithDomain) => {
-          const metadata = await metadataService.getLatestMetadata(siteWithDomain.id);
-          return {
-            metadata,
-            site: siteWithDomain,
-            domain: siteWithDomain.domain,
-          };
-        }),
-      );
+      // Legacy: Get sites for a specific domain
+      sites = await getSitesForDomain(domain, siteService, metadataService);
     } else if (hasFilters) {
-      // Use comprehensive filtering system
-      const filteredSites = await siteService.filterSites(filters, limit, offset);
-
-      // Get metadata for filtered sites
-      sites = await Promise.all(
-        filteredSites.map(async (siteWithDomain) => {
-          const metadata = await metadataService.getLatestMetadata(siteWithDomain.id);
-          return {
-            metadata,
-            site: siteWithDomain,
-            domain: siteWithDomain.domain,
-          };
-        }),
-      );
+      // Use filtering system
+      sites = await getFilteredSites(filters, limit, offset, siteService, metadataService);
     } else {
-      // Default: Get all sites with latest metadata
-      sites = await metadataService.getAllSitesWithLatestMetadata();
-
-      // Get database statistics
-      stats = await metadataService.getMetadataStats();
+      // Default: Get all sites with stats
+      const result = await getAllSitesWithStats(metadataService);
+      sites = result.sites;
+      stats = result.stats;
     }
 
     // Get filter statistics if requested
@@ -144,43 +121,22 @@ export async function GET(request: NextRequest) {
       filterStats = await siteService.getFilterStats();
     }
 
-    // If includeHistory is true, get version history for each site
+    // Add version history if requested
     if (includeHistory && sites.length > 0) {
-      const sitesWithHistory = await Promise.all(
-        sites.map(async (siteData) => {
-          if (siteData.site) {
-            const history = await metadataService.getMetadataHistory(siteData.site.id);
-            return {
-              ...siteData,
-              history: history.filter((h) => !h.is_latest), // Exclude current version from history
-            };
-          }
-          return siteData;
-        }),
-      );
-      sites = sitesWithHistory;
+      sites = await addHistoryToSites(sites, metadataService);
     }
 
-    // Apply pagination and filter metadata
-    const paginatedSites = sites.slice(offset, offset + limit);
+    // Apply pagination only if not already handled by filtering
+    const paginatedSites = hasFilters ? sites : sites.slice(offset, offset + limit);
 
     const response = {
       success: true,
       data: paginatedSites,
-      pagination: {
-        total: sites.length,
-        limit,
-        offset,
-        hasMore: offset + limit < sites.length,
-      },
       stats,
       filterStats,
       appliedFilters: filters,
-      legacy: {
-        domain,
-        search,
-        includeHistory,
-      },
+      pagination: { total: sites.length, limit, offset, hasMore: offset + limit < sites.length },
+      legacy: { domain, search: searchParams.get('search'), includeHistory },
     };
 
     return NextResponse.json(response);

@@ -8,13 +8,13 @@ import { ArrowUpRight, Globe } from 'lucide-react';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SiteCard({ siteData }: { siteData: any }) {
-  const ogData = siteData?.open_graph_metadata || {};
-  const basicData = siteData?.basic_metadata || {};
-  const twitterData = siteData?.twitter_metadata || {};
+  const ogData = siteData?.openGraph || {};
+  const basicData = siteData?.basic || {};
+  const twitterData = siteData?.twitter || {};
   const site = siteData?.site || {};
   const siteUrl = site?.url || site?.domain?.domain;
 
-  const title = siteData?.title || ogData?.site_name || ogData?.title || basicData?.title;
+  const title = site?.title || ogData?.site_name || ogData?.title || basicData?.title;
   const ogImage = ogData?.images?.[0] || twitterData?.images?.[0];
   const faviconUrl = basicData?.favicon || `https://www.google.com/s2/favicons?domain=${siteUrl}&sz=32`;
 

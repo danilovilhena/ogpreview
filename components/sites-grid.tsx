@@ -2,11 +2,36 @@ import { SiteCard } from '@/components/site-card';
 import { Pagination } from '@/components/pagination';
 import type { ApiResponse } from '@/types/api';
 
-async function fetchSites(page: number = 1, limit: number = 60): Promise<ApiResponse> {
+interface SearchParams {
+  search?: string;
+  industry?: string;
+  category?: string;
+  country?: string;
+  language?: string;
+  companySize?: string;
+}
+
+async function fetchSites(page: number = 1, limit: number = 60, searchParams?: SearchParams): Promise<ApiResponse> {
   const offset = (page - 1) * limit;
   const baseUrl =
     process.env.NODE_ENV === 'production' ? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ogpreview.co') : 'http://localhost:3000';
-  const url = `${baseUrl}/api/sites?limit=${limit}&offset=${offset}`;
+
+  // Build query parameters
+  const queryParams = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+  });
+
+  // Add search and filter parameters if provided
+  if (searchParams) {
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value) {
+        queryParams.append(key, value);
+      }
+    });
+  }
+
+  const url = `${baseUrl}/api/sites?${queryParams.toString()}`;
 
   try {
     const response = await fetch(url, {
@@ -30,10 +55,11 @@ async function fetchSites(page: number = 1, limit: number = 60): Promise<ApiResp
 
 interface SitesGridProps {
   page: number;
+  searchParams?: SearchParams;
 }
 
-export async function SitesGrid({ page }: SitesGridProps) {
-  const sitesData = await fetchSites(page);
+export async function SitesGrid({ page, searchParams }: SitesGridProps) {
+  const sitesData = await fetchSites(page, 60, searchParams);
 
   if (!sitesData.success || sitesData.data.length === 0) {
     return (

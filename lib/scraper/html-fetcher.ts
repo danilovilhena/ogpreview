@@ -108,7 +108,7 @@ function buildClient() {
   });
 }
 
-export async function guardedFetchHtml(startUrl: URL): Promise<string> {
+export async function fetchHtml(startUrl: URL): Promise<string> {
   // Create a new client for each request to get fresh user agent rotation
   const client = buildClient();
 

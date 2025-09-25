@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // Types for our API response
 export interface OpenGraphMetadata {
   'og:title'?: string;
@@ -42,5 +44,24 @@ export interface ApiResponse {
     limit: number;
     offset: number;
     hasMore: boolean;
+  };
+  stats?: any;
+  filterStats?: any;
+  appliedFilters?: any;
+  legacy?: {
+    domain?: string | null;
+    search?: string | null;
+    includeHistory?: boolean;
+  };
+}
+
+export interface FiltersResponse {
+  success: boolean;
+  filters: {
+    industries: Array<{ value: string; count: number }>;
+    categories: Array<{ value: string; count: number }>;
+    countries: Array<{ value: string; count: number }>;
+    languages: Array<{ value: string; count: number }>;
+    companySizes: Array<{ value: string; count: number }>;
   };
 }

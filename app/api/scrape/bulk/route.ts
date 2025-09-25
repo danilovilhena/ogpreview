@@ -1,63 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { scrapingService, checkRateLimit, getRateLimitHeaders } from '@/lib/scraper';
+import { scrapeUrls } from '@/lib/scraper';
+import { checkRateLimit } from '@/lib/scraper/check-rate-limit';
 
 export const runtime = 'nodejs';
 
-interface BulkScrapeRequest {
-  key: string;
-  urls: string[];
-  maxConcurrency?: number;
-}
-
-export async function POST(request: NextRequest) {
-  // Check rate limit first
-  const { allowed, remaining, resetTime } = checkRateLimit(request);
-  const rateLimitHeaders = getRateLimitHeaders(remaining, resetTime);
-
-  if (!allowed) {
-    return NextResponse.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429, headers: rateLimitHeaders });
-  }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const validateBody = async (request: NextRequest): Promise<{ success: boolean; error?: string; body?: any; status?: number }> => {
+  let body;
 
   try {
-    const body: BulkScrapeRequest = await request.json();
-    const { key, urls, maxConcurrency = 1 } = body;
+    body = await request.json();
+  } catch {
+    return { success: false, error: 'Invalid request body', status: 400 };
+  }
 
-    if (!key || !urls) {
-      return NextResponse.json({ error: 'Missing key or urls in request body' }, { status: 400 });
-    }
+  if (!body?.key || !body?.urls) {
+    return { success: false, error: 'Missing key or url in request body', status: 400 };
+  }
 
-    if (key !== process.env.SCRAPE_SECRET) {
-      return NextResponse.json({ error: 'Forbidden: Invalid authentication key' }, { status: 403 });
-    }
+  if (body.key !== process.env.SCRAPE_SECRET) {
+    return { success: false, error: 'Forbidden: Invalid authentication key', status: 403 };
+  }
 
-    if (!Array.isArray(urls)) {
-      return NextResponse.json({ error: 'urls must be an array' }, { status: 400 });
-    }
+  if (!Array.isArray(body.urls)) {
+    return { success: false, error: 'urls must be an array', status: 400 };
+  }
 
-    if (urls.length === 0) {
-      return NextResponse.json({ error: 'urls array cannot be empty' }, { status: 400 });
-    }
+  if (body.urls.length === 0) {
+    return { success: false, error: 'urls array cannot be empty', status: 400 };
+  }
 
-    // Validate maxConcurrency
-    const concurrency = Math.max(1, Math.min(maxConcurrency, 10)); // Limit between 1-10
+  return { success: true, body };
+};
 
-    // Performance tracking
+export async function POST(request: NextRequest) {
+  const rateLimit = checkRateLimit(request);
+  if (!rateLimit.allowed) return NextResponse.json({ ...rateLimit.error }, { ...rateLimit.errorBody });
+
+  try {
+    const { success, error, body, status } = await validateBody(request);
+    if (!success) return NextResponse.json({ error }, { status });
+
+    const urls = body?.urls;
     const startTime = Date.now();
+    const results = await scrapeUrls(urls, 1);
+    const totalProcessingTime = Date.now() - startTime;
 
-    // Scrape all URLs
-    const results = await scrapingService.scrapeUrls(urls, concurrency);
-
-    const totalTime = Date.now() - startTime;
-
-    // Calculate statistics
     const successful = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
     const saved = results.filter((r) => r.saved).length;
-
-    const avgResponseTime =
-      results.filter((r) => r.performance?.responseTime).reduce((sum, r) => sum + (r.performance?.responseTime || 0), 0) / successful || 0;
-
-    const totalContentLength = results.filter((r) => r.performance?.contentLength).reduce((sum, r) => sum + (r.performance?.contentLength || 0), 0);
 
     return NextResponse.json(
       {
@@ -65,22 +56,13 @@ export async function POST(request: NextRequest) {
         totalUrls: urls.length,
         uniqueUrls: results.length,
         results,
-        statistics: {
-          successful,
-          failed,
-          saved,
-          avgResponseTime: Math.round(avgResponseTime),
-          totalContentLength,
-          totalProcessingTime: totalTime,
-          concurrency,
-        },
+        statistics: { successful, failed, saved, totalProcessingTime },
       },
-      { headers: rateLimitHeaders },
+      { headers: rateLimit.headers },
     );
   } catch (error: unknown) {
     console.error('Bulk scraping error:', error);
-
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: errorMessage }, { status: 500, headers: rateLimitHeaders });
+    return NextResponse.json({ error: errorMessage }, { status: 500, headers: rateLimit.headers });
   }
 }

@@ -3,7 +3,15 @@ import { SitesGrid } from '@/components/sites-grid';
 import { Suspense } from 'react';
 
 interface HomeProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    industry?: string;
+    category?: string;
+    country?: string;
+    language?: string;
+    companySize?: string;
+  }>;
 }
 
 export default async function Home({ searchParams }: HomeProps) {
@@ -20,7 +28,7 @@ export default async function Home({ searchParams }: HomeProps) {
           <p className="text-neutral-500">Browse a curated gallery of OG images from top websites and discover what makes them stand out.</p>
         </div>
         <Suspense fallback={<LoadingSkeleton />}>
-          <SitesGrid page={page} />
+          <SitesGrid page={page} searchParams={params} />
         </Suspense>
       </div>
     </div>

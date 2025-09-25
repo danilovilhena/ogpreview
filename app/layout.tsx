@@ -24,7 +24,7 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: 'OG Preview',
-  description: 'Open Graph preview application',
+  description: 'The Ultimate Open Graph Image Gallery',
 };
 
 export default function RootLayout({

@@ -2,22 +2,12 @@ export interface ScrapedMetadata {
   basic: BasicMetadata;
   openGraph: OpenGraphMetadata;
   twitter: TwitterMetadata;
-  structured: StructuredMetadata;
-  images: ImageSource[];
-  links: LinkMetadata;
-  other: OtherMetadata;
-  raw: RawMetadata;
-}
-
-export interface ImageSource {
-  url: string;
-  source: 'og:image' | 'twitter:image' | 'favicon' | 'apple-touch-icon' | 'shortcut-icon' | 'icon' | 'mask-icon' | 'favicon-default';
-  sizes?: string;
-  type?: string;
+  jsonLd?: Record<string, unknown>[];
+  raw: MetaTag[];
 }
 
 export interface RawMetadata {
-  meta: MetaTag[];
+  raw: MetaTag[];
 }
 
 export interface MetaTag {
@@ -33,15 +23,18 @@ export interface BasicMetadata {
   description?: string;
   keywords?: string;
   author?: string;
-  robots?: string;
-  robots_googlebot?: string;
-  robots_bingbot?: string;
+  robots?: {
+    all?: string;
+    googlebot?: string;
+    bingbot?: string;
+  };
   viewport?: string;
   charset?: string;
   generator?: string;
   publisher?: string;
-  theme_color?: string;
+  themeColor?: string;
   favicon?: string;
+  canonical?: string;
 }
 
 export interface OpenGraphMetadata {
@@ -49,61 +42,45 @@ export interface OpenGraphMetadata {
   description?: string;
   type?: string;
   url?: string;
-  site_name?: string;
+  siteName?: string;
   locale?: string;
-  locale_alternate?: string[];
+  localeAlternate?: string[];
   images?: string[];
-  image_secure_url?: string[];
-  image_type?: string[];
-  image_width?: string;
-  image_height?: string;
-  image_alt?: string;
+  imageSecureUrl?: string[];
+  imageType?: string[];
+  imageWidth?: string;
+  imageHeight?: string;
+  imageAlt?: string;
   audio?: string;
   video?: string;
   determiner?: string;
-  updated_time?: string;
-  see_also?: string[];
-  article_author?: string;
-  article_published_time?: string;
-  article_modified_time?: string;
-  article_section?: string;
-  article_tag?: string[];
+  updatedTime?: string;
+  seeAlso?: string[];
+  articleAuthor?: string;
+  articlePublishedTime?: string;
+  articleModifiedTime?: string;
+  articleSection?: string;
+  articleTag?: string[];
 }
 
 export interface TwitterMetadata {
   card?: string;
   site?: string;
-  site_id?: string;
+  siteId?: string;
   creator?: string;
-  creator_id?: string;
+  creatorId?: string;
   title?: string;
   description?: string;
   images?: string[];
-  image_alt?: string;
-  app_name_iphone?: string;
-  app_id_iphone?: string;
-  app_name_ipad?: string;
-  app_id_ipad?: string;
-  app_name_googleplay?: string;
-  app_id_googleplay?: string;
+  imageAlt?: string;
+  appNameIphone?: string;
+  appIdIphone?: string;
+  appNameIpad?: string;
+  appIdIpad?: string;
+  appNameGoogleplay?: string;
+  appIdGoogleplay?: string;
 }
 
-export interface StructuredMetadata {
+export interface JsonLdMetadata {
   jsonLd?: Record<string, unknown>[];
-}
-
-export interface LinkMetadata {
-  canonical?: string;
-}
-
-export interface OtherMetadata {
-  msapplication_tilecolor?: string;
-  msapplication_tileimage?: string;
-  language?: string;
-  application_name?: string;
-  apple_mobile_web_app_title?: string;
-  apple_mobile_web_app_capable?: string;
-  apple_mobile_web_app_status_bar_style?: string;
-  format_detection?: string;
-  mobile_web_app_capable?: string;
 }

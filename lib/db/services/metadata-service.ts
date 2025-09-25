@@ -24,14 +24,16 @@ export class MetadataService {
 
     // Replace JSON string fields with parsed objects
     Object.assign(parsed, {
-      basic_metadata: safeJsonParse(metadata.basic_metadata),
-      open_graph_metadata: safeJsonParse(metadata.open_graph_metadata),
-      twitter_metadata: safeJsonParse(metadata.twitter_metadata),
-      structured_metadata: safeJsonParse(metadata.structured_metadata),
-      images: safeJsonParse(metadata.images),
-      link_metadata: safeJsonParse(metadata.link_metadata),
-      other_metadata: safeJsonParse(metadata.other_metadata),
-      raw_metadata: safeJsonParse(metadata.raw_metadata),
+      basic: safeJsonParse(metadata.basic_metadata),
+      openGraph: safeJsonParse(metadata.open_graph_metadata),
+      twitter: safeJsonParse(metadata.twitter_metadata),
+      jsonLd: safeJsonParse(metadata.ld_json_metadata),
+      raw: safeJsonParse(metadata.raw_metadata),
+      basic_metadata: undefined,
+      open_graph_metadata: undefined,
+      twitter_metadata: undefined,
+      ld_json_metadata: undefined,
+      raw_metadata: undefined,
     });
 
     return parsed;
@@ -40,16 +42,7 @@ export class MetadataService {
   /**
    * Save metadata for a site, creating a new version
    */
-  async saveMetadata(
-    siteId: string,
-    metadata: ScrapedMetadata,
-    scrapedAt: string,
-    performance?: {
-      responseTime: number;
-      contentLength: number;
-      httpStatus: number;
-    },
-  ): Promise<SiteMetadata> {
+  async saveMetadata(siteId: string, metadata: ScrapedMetadata): Promise<SiteMetadata> {
     // Get the current latest version for this site
     const { data: currentLatest } = await this.supabase
       .from('site_metadata')
@@ -76,15 +69,9 @@ export class MetadataService {
       basic_metadata: JSON.stringify(metadata.basic || {}),
       open_graph_metadata: JSON.stringify(metadata.openGraph || {}),
       twitter_metadata: JSON.stringify(metadata.twitter || {}),
-      structured_metadata: JSON.stringify(metadata.structured || {}),
-      images: JSON.stringify(metadata.images || []),
-      link_metadata: JSON.stringify(metadata.links || {}),
-      other_metadata: JSON.stringify(metadata.other || {}),
+      ld_json_metadata: JSON.stringify(metadata.jsonLd || {}),
       raw_metadata: JSON.stringify(metadata.raw || {}),
-      response_time: performance?.responseTime,
-      content_length: performance?.contentLength,
-      http_status: performance?.httpStatus,
-      scraped_at: scrapedAt,
+      scraped_at: new Date().toISOString(),
       is_latest: true,
     };
 
