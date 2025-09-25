@@ -63,7 +63,10 @@ function getRandomUserAgent(): string {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
-function buildClient() {
+function buildClient(userAgentIndex = 0) {
+  // Cycle through user agents on retries
+  const userAgent = USER_AGENTS[userAgentIndex % USER_AGENTS.length];
+
   return ky.create({
     // More aggressive retry for 403s and 429s
     retry: {
@@ -80,7 +83,7 @@ function buildClient() {
     },
     timeout: 45000, // Increased from 30s
     headers: {
-      'User-Agent': getRandomUserAgent(),
+      'User-Agent': userAgent,
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
       'Accept-Language': 'en-US,en;q=0.9',
       'Accept-Encoding': 'gzip, deflate, br',
@@ -99,6 +102,7 @@ function buildClient() {
       beforeRetry: [
         async ({ error, retryCount }) => {
           console.log(`Retry ${retryCount} for request due to:`, error.message);
+          console.log(`Using user agent: ${userAgent}`);
 
           // Add a small random delay before retry to avoid thundering herd
           const delay = Math.random() * 2000 + 1000; // 1-3 seconds
@@ -110,91 +114,153 @@ function buildClient() {
 }
 
 export async function fetchHtml(startUrl: URL): Promise<string> {
-  // Create a new client for each request to get fresh user agent rotation
-  const client = buildClient();
-
-  // Follow up to N redirects, re-checking each target
   const MAX_REDIRECTS = 5;
-  let current = startUrl;
-  let response: Response | undefined;
+  const MAX_USER_AGENT_RETRIES = USER_AGENTS.length; // Try all user agents
 
-  for (let i = 0; i <= MAX_REDIRECTS; i++) {
-    await resolveAndGuard(current);
+  let lastError: Error | undefined;
 
-    response = await client.get(current.toString(), { throwHttpErrors: false });
-
-    // Handle redirects manually to re-guard the next hop
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
-      const loc = response.headers.get('location');
-      if (!loc) break;
-      const next = new URL(loc, current);
-      current = next;
-      continue;
-    }
-    break;
-  }
-
-  if (!response) throw new Error('No response received.');
-
-  // Special handling for 403 - try once more with a different approach
-  if (response.status === 403) {
-    console.log('Got 403, trying with minimal headers...');
-
-    // Try again with minimal headers to bypass some bot detection
-    const minimalClient = ky.create({
-      timeout: 45000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      redirect: 'manual',
-    });
-
-    // Add a longer delay before the fallback attempt
-    await new Promise((resolve) => setTimeout(resolve, 3000 + Math.random() * 2000));
-
+  // Try each user agent in sequence
+  for (let userAgentAttempt = 0; userAgentAttempt < MAX_USER_AGENT_RETRIES; userAgentAttempt++) {
     try {
-      response = await minimalClient.get(current.toString(), { throwHttpErrors: false });
-    } catch (fallbackError) {
-      console.log('Fallback attempt failed:', fallbackError);
-      // Continue with original error handling
+      // Create a new client with a different user agent for each attempt
+      const client = buildClient(userAgentAttempt);
+
+      let current = startUrl;
+      let response: Response | undefined;
+
+      // Follow up to N redirects, re-checking each target
+      for (let i = 0; i <= MAX_REDIRECTS; i++) {
+        await resolveAndGuard(current);
+
+        response = await client.get(current.toString(), { throwHttpErrors: false });
+
+        // Handle redirects manually to re-guard the next hop
+        if ([301, 302, 303, 307, 308].includes(response.status)) {
+          const loc = response.headers.get('location');
+          if (!loc) break;
+          const next = new URL(loc, current);
+          current = next;
+          continue;
+        }
+        break;
+      }
+
+      if (!response) throw new Error('No response received.');
+
+      // Special handling for 403 - try once more with a different approach
+      if (response.status === 403) {
+        console.log(`Got 403 with user agent ${userAgentAttempt + 1}/${MAX_USER_AGENT_RETRIES}, trying with minimal headers...`);
+
+        // Try again with minimal headers to bypass some bot detection
+        const minimalClient = ky.create({
+          timeout: 45000,
+          headers: {
+            'User-Agent': USER_AGENTS[userAgentAttempt % USER_AGENTS.length],
+            Accept: 'text/html,application/xhtml+xml',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          redirect: 'manual',
+        });
+
+        // Add a longer delay before the fallback attempt
+        await new Promise((resolve) => setTimeout(resolve, 3000 + Math.random() * 2000));
+
+        try {
+          response = await minimalClient.get(current.toString(), { throwHttpErrors: false });
+        } catch (fallbackError) {
+          console.log('Fallback attempt failed:', fallbackError);
+          // Continue with original error handling
+        }
+      }
+
+      // If we get here and still have a 4xx/5xx error, try the next user agent
+      if (response.status >= 400) {
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+        lastError = error;
+
+        // If this isn't the last user agent attempt, continue to next user agent
+        if (userAgentAttempt < MAX_USER_AGENT_RETRIES - 1) {
+          console.log(`Request failed with user agent ${userAgentAttempt + 1}/${MAX_USER_AGENT_RETRIES} (${response.status}), trying next user agent...`);
+
+          // Add delay before trying next user agent
+          const delay = Math.random() * 2000 + 1000; // 1-3 seconds
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // This was the last attempt, throw the error
+        throw error;
+      }
+
+      // Success! Process the response
+      const ct = response.headers.get('content-type') || '';
+      if (!/\btext\/html\b/i.test(ct)) {
+        throw new Error(`Unsupported content-type: ${ct || 'unknown'}`);
+      }
+
+      // Enforce size limit using a reader
+      const reader = (response as Response & { body?: ReadableStream }).body?.getReader?.();
+      if (!reader) {
+        // Fallback to .text() if no reader (rare)
+        const text = await response.text();
+        if (text.length > MAX_BYTES) throw new Error('Response too large.');
+        return text;
+      }
+
+      const decoder = new TextDecoder(); // will assume UTF-8
+      let received = 0;
+      const chunks: string[] = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        received += value.byteLength;
+        if (received > MAX_BYTES) {
+          reader.cancel();
+          throw new Error('Response too large.');
+        }
+        chunks.push(decoder.decode(value, { stream: true }));
+      }
+      chunks.push(decoder.decode());
+      return chunks.join('');
+    } catch (error) {
+      lastError = error as Error;
+
+      // If this isn't the last user agent attempt and it's a retryable error, continue
+      if (userAgentAttempt < MAX_USER_AGENT_RETRIES - 1 && isRetryableError(error)) {
+        console.log(`Request failed with user agent ${userAgentAttempt + 1}/${MAX_USER_AGENT_RETRIES} (${lastError.message}), trying next user agent...`);
+
+        // Add delay before trying next user agent
+        const delay = Math.random() * 2000 + 1000; // 1-3 seconds
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // If it's not retryable or this was the last attempt, throw immediately
+      throw error;
     }
   }
 
-  if (response.status >= 400) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
+  // If we get here, all user agents failed
+  throw lastError || new Error('All user agent attempts failed');
+}
 
-  const ct = response.headers.get('content-type') || '';
-  if (!/\btext\/html\b/i.test(ct)) {
-    throw new Error(`Unsupported content-type: ${ct || 'unknown'}`);
-  }
+// Helper function to determine if an error is worth retrying with a different user agent
+function isRetryableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
 
-  // Enforce size limit using a reader
-  const reader = (response as Response & { body?: ReadableStream }).body?.getReader?.();
-  if (!reader) {
-    // Fallback to .text() if no reader (rare)
-    const text = await response.text();
-    if (text.length > MAX_BYTES) throw new Error('Response too large.');
-    return text;
-  }
+  const message = 'message' in error ? String(error.message) : '';
 
-  const decoder = new TextDecoder(); // will assume UTF-8
-  let received = 0;
-  const chunks: string[] = [];
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    received += value.byteLength;
-    if (received > MAX_BYTES) {
-      reader.cancel();
-      throw new Error('Response too large.');
-    }
-    chunks.push(decoder.decode(value, { stream: true }));
-  }
-  chunks.push(decoder.decode());
-  return chunks.join('');
+  // Retry on HTTP errors, timeouts, network errors
+  return (
+    message.includes('HTTP 4') || // 4xx errors
+    message.includes('HTTP 5') || // 5xx errors
+    message.includes('timeout') ||
+    message.includes('network') ||
+    message.includes('ECONNRESET') ||
+    message.includes('ENOTFOUND') ||
+    ('name' in error && error.name === 'HTTPError') ||
+    ('name' in error && error.name === 'TimeoutError')
+  );
 }
 
 export function handleScrapingError(error: unknown) {
