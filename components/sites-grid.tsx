@@ -13,8 +13,7 @@ interface SearchParams {
 
 async function fetchSites(page: number = 1, limit: number = 60, searchParams?: SearchParams): Promise<ApiResponse> {
   const offset = (page - 1) * limit;
-  const baseUrl =
-    process.env.NODE_ENV === 'production' ? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ogpreview.co') : 'http://localhost:3000';
+  const baseUrl = process.env.NODE_ENV === 'production' ? 'https://ogpreview.co' : 'http://localhost:3000';
 
   // Build query parameters
   const queryParams = new URLSearchParams({
