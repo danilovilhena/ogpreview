@@ -9,8 +9,9 @@ const MemoizedImage = memo(
         <Image
           src={ogImage}
           alt={title || 'Site preview'}
-          fill
-          className="object-cover rounded-md border"
+          width={500}
+          height={300}
+          className="w-full h-auto rounded-md border"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           onError={() => setImageError(true)}
         />
@@ -18,7 +19,7 @@ const MemoizedImage = memo(
     }
 
     return (
-      <div className="w-full h-full rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center">
+      <div className="w-full h-48 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Globe className="w-8 h-8 text-gray-400 mx-auto mb-2" />
           <p className="text-sm text-gray-500">No preview available</p>

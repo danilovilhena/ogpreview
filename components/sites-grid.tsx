@@ -72,9 +72,11 @@ export async function SitesGrid({ page, searchParams }: SitesGridProps) {
 
   return (
     <div className="w-full max-w-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+      <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 w-full space-y-0">
         {sitesData.data.map((siteData) => (
-          <SiteCard key={siteData.site.id} siteData={siteData} />
+          <div key={siteData.site.id} className="break-inside-avoid mb-6">
+            <SiteCard siteData={siteData} />
+          </div>
         ))}
       </div>
 

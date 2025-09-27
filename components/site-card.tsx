@@ -41,7 +41,7 @@ export function SiteCard({ siteData }: { siteData: any }) {
     <TooltipProvider>
       <div className="block relative group" onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
         {/* Full width OG Image or Placeholder */}
-        <div className="relative aspect-video w-full">
+        <div className="relative w-full">
           <MemoizedImage ogImage={ogImage} title={title} imageError={imageError} setImageError={setImageError} />
 
           {/* Animated Arrow Link */}

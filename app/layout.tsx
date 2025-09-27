@@ -1,4 +1,5 @@
 import Header from '@/components/header';
+import Footer from '@/components/footer';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
@@ -137,6 +138,7 @@ export default function RootLayout({
         <div className="fixed top-0 left-0 z-[-2] h-screen w-full bg-white bg-[radial-gradient(100%_50%_at_50%_0%,rgba(0,163,255,0.13)_0,rgba(0,163,255,0)_50%,rgba(0,163,255,0)_100%)]"></div>
         <Header />
         {children}
+        <Footer />
         <SpeedInsights />
         <Analytics />
       </body>
