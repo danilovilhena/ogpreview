@@ -1,37 +1,27 @@
-import { checkRateLimit } from '@/lib/scraper/check-rate-limit';
 import { scrapeUrl } from '@/lib/scraper';
+import { checkRateLimit } from '@/lib/scraper/check-rate-limit';
+import { validateBody } from '@/lib/validateBody';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export const runtime = 'nodejs';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validateBody = async (request: NextRequest): Promise<{ success: boolean; error?: string; body?: any; status?: number }> => {
-  let body;
-
-  try {
-    body = await request.json();
-  } catch {
-    return { success: false, error: 'Invalid request body', status: 400 };
-  }
-
-  if (!body?.key || !body?.url) {
-    return { success: false, error: 'Missing key or url in request body', status: 400 };
-  }
-  if (body.key !== process.env.SCRAPE_SECRET) {
-    return { success: false, error: 'Forbidden: Invalid authentication key', status: 403 };
-  }
-  return { success: true, body };
-};
+const requestSchema = z.object({
+  key: z.string(),
+  url: z.string(),
+});
 
 export async function POST(request: NextRequest) {
   const rateLimit = checkRateLimit(request);
   if (!rateLimit.allowed) return NextResponse.json({ ...rateLimit.error }, { ...rateLimit.errorBody });
 
   try {
-    const { success, error, body, status } = await validateBody(request);
+    const { success, error, body, status } = await validateBody(requestSchema, request);
     if (!success) return NextResponse.json({ error }, { status });
 
-    const result = await scrapeUrl(body?.url);
+    const { url } = body as z.infer<typeof requestSchema>;
+
+    const result = await scrapeUrl(url);
     if (!result.success) {
       const status = result.error === 'Invalid URL format' ? 400 : 500;
       return NextResponse.json({ error: result.error }, { status, headers: rateLimit.headers });

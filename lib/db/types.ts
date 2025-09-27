@@ -26,52 +26,118 @@ export const INDUSTRIES = [
 export const COMPANY_SIZES = ['Startup (1-10)', 'Small (11-50)', 'Medium (51-200)', 'Large (201-1000)', 'Enterprise (1000+)'] as const;
 
 export const CATEGORIES = [
-  // Communication & Collaboration
-  'Email Marketing',
-  'Communication',
-  'Video Conferencing',
-  'Team Collaboration',
+  // AI & Machine Learning
+  'AI Development Platforms',
+  'Machine Learning Infrastructure',
+  'AI Security & Privacy',
+  'AI Interaction & Interfaces',
 
-  // Business Operations
-  'CRM Software',
-  'Project Management',
-  'HR Software',
-  'Accounting',
-  'Customer Support',
+  // Business Software
+  'CRM & Sales',
+  'ERP & Operations',
+  'Finance & Accounting',
+  'Human Resources (HR)',
+  'Marketing & Customer Engagement',
+  'Customer Support & Success',
+  'E-commerce Platforms',
+  'Project & Work Management',
+  'Collaboration & Communication',
+  'Scheduling & Event Management',
+  'Document Management & E-Signatures',
+  'Forms & Surveys',
+  'Compliance & Risk Management',
 
-  // Development & Design
-  'Design Tools',
-  'Code Editor',
-  'Development Tools',
-  'API Tools',
+  // Community & Social
+  'Social Networking',
+  'Community Building Platforms',
+  'Collaboration & Feedback',
 
-  // Marketing & Sales
-  'Social Media Management',
-  'SEO Tools',
-  'Analytics',
-  'Landing Page Builder',
+  // Content & Publishing
+  'Content Management Systems (CMS)',
+  'Community Platforms',
+  'Documentation & Knowledge Base',
+  'Learning Management Systems (LMS)',
+  'Digital Asset Management (DAM)',
+  'Publishing',
+  'Blogging & Personal Sites',
 
-  // AI & Automation
-  'AI Writing Tools',
-  'Automation',
-  'AI Assistant',
-  'Machine Learning',
+  // Data & Analytics
+  'Web & Product Analytics',
+  'Business Intelligence & Reporting',
+  'Data Engineering & Integration',
+  'Data Warehousing & Processing',
+  'Data Extraction & Web Scraping',
 
-  // E-commerce & Finance
-  'E-commerce Platform',
-  'Payment Processing',
-  'Invoicing',
-  'Subscription Management',
+  // Developer Tools
+  'Website Builders',
+  'IDEs & Code Editors',
+  'Frameworks & Platforms',
+  'API Development & Testing',
+  'Testing & Quality Assurance',
+  'Version Control & Collaboration',
+  'Code Analysis & Transformation',
+  'Build & Deployment',
+  'Integration Platforms',
+  'AI Assisted Coding',
+
+  // Infrastructure & Operations
+  'Search Engines',
+  'Cloud Infrastructure Management',
+  'Server & VM Management',
+  'Monitoring & Observability',
+  'Databases',
+  'Networking & Connectivity',
+  'Orchestration & Scheduling',
+  'Messaging & Event Streaming',
+  'Storage Solutions',
+  'Backup & Recovery',
+
+  // Design & Prototyping
+  'Design & Prototyping',
+
+  // Cryptocurrency & Blockchain
+  'Cryptocurrency & Blockchain',
+
+  // Finance & Fintech
+  'Finance & Fintech',
+
+  // Gaming
+  'Gaming',
+
+  // Internet of Things (IoT)
+  'Internet of Things (IoT)',
+
+  // Logistics & Supply Chain
+  'Logistics & Supply Chain',
+
+  // Media & Streaming
+  'Media & Streaming',
 
   // Productivity & Utilities
-  'File Storage',
-  'Password Management',
-  'Note Taking',
-  'Time Tracking',
-  'VPN',
+  'Note Taking & Knowledge Management',
+  'Password & Secret Management',
+  'Screen Capture & Recording',
+  'File Management & Sync',
+  'Email & Communication',
+  'Automation',
+  'Time & Task Management',
+  'Personal Finance Management',
+  'Design & Visualization',
+  'Bookmark & Content Management',
+  'Remote Desktop & Access',
+  'Browsers & Extensions',
 
-  // Other
-  'Other',
+  // Security & Privacy
+  'Identity & Access Management (IAM)',
+  'Secrets Management',
+  'Threat Detection & Response',
+  'Network Security',
+  'Data Security & Privacy',
+  'Application Security',
+  'Fraud Prevention',
+
+  // Miscellaneous
+  'Miscellaneous',
 ] as const;
 
 export interface Database {
@@ -114,6 +180,12 @@ export interface Database {
           is_ai_classified: boolean;
           confidence: number | null;
           last_classified: string | null;
+          is_featured: boolean;
+          views: number;
+          likes: number;
+          tags: string[];
+          affiliate_link: string | null;
+          slug: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -132,6 +204,12 @@ export interface Database {
           is_ai_classified?: boolean;
           confidence?: number | null;
           last_classified?: string | null;
+          is_featured?: boolean;
+          views?: number;
+          likes?: number;
+          tags?: string[];
+          affiliate_link?: string | null;
+          slug?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -150,6 +228,12 @@ export interface Database {
           is_ai_classified?: boolean;
           confidence?: number | null;
           last_classified?: string | null;
+          is_featured?: boolean;
+          views?: number;
+          likes?: number;
+          tags?: string[];
+          affiliate_link?: string | null;
+          slug?: string | null;
           created_at?: string;
           updated_at?: string;
         };

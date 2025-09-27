@@ -17,12 +17,12 @@ CREATE TABLE sites (
   path TEXT NOT NULL,
 
   -- AI-populated content
-  title TEXT, -- Site title that AI will extract
+  title TEXT, -- Site title that AI will extract, for example if extracted title was: "Contra - A professional network for the jobs and skills of the future", the title would be "Contra"
 
   -- Essential classification that AI can determine
   industry VARCHAR(100), -- Technology, Healthcare, Finance, E-commerce, etc.
   category VARCHAR(100), -- Email Marketing, CRM Software, AI Writing Tools, Project Management, etc.
-  country VARCHAR(100), -- US, UK, DE, FR, etc. (ISO country codes)  
+  country VARCHAR(100), -- US, UK, DE, FR, etc. (ISO country codes for the country of origin)  
   language VARCHAR(10), -- en, es, fr, de, etc. (primary language)
   company_size VARCHAR(100), -- Startup (1-10), Small (11-50), Medium (51-200), Large (201-1000), Enterprise (1000+)
 
@@ -90,3 +90,18 @@ CREATE TRIGGER update_domains_updated_at BEFORE UPDATE ON domains
 
 CREATE TRIGGER update_sites_updated_at BEFORE UPDATE ON sites
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Add new columns to sites table
+ALTER TABLE sites ADD COLUMN is_featured BOOLEAN DEFAULT FALSE;
+ALTER TABLE sites ADD COLUMN views INTEGER DEFAULT 0;
+ALTER TABLE sites ADD COLUMN likes INTEGER DEFAULT 0;
+ALTER TABLE sites ADD COLUMN tags TEXT[] DEFAULT '{}';
+ALTER TABLE sites ADD COLUMN affiliate_link TEXT;
+ALTER TABLE sites ADD COLUMN slug VARCHAR(255) UNIQUE;
+
+-- Create indexes for new columns
+CREATE INDEX idx_sites_is_featured ON sites(is_featured);
+CREATE INDEX idx_sites_views ON sites(views);
+CREATE INDEX idx_sites_likes ON sites(likes);
+CREATE INDEX idx_sites_tags ON sites USING GIN(tags);
+CREATE INDEX idx_sites_slug ON sites(slug);

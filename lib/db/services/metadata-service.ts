@@ -3,6 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, SiteMetadata, SiteMetadataInsert, SiteMetadataWithSite } from '../types';
 import type { ScrapedMetadata } from '../../scraper/types';
+import { safeJsonParse } from '@/lib/utils';
 
 export class MetadataService {
   constructor(private supabase: SupabaseClient<Database>) {}
@@ -12,17 +13,6 @@ export class MetadataService {
    */
   private parseMetadataFields<T extends SiteMetadata>(metadata: T): T {
     const parsed = { ...metadata };
-
-    // Helper function to safely parse JSON
-    const safeJsonParse = (jsonString: string | null) => {
-      if (!jsonString) return null;
-      try {
-        return JSON.parse(jsonString);
-      } catch (error) {
-        console.warn('Failed to parse JSON metadata:', error);
-        return jsonString; // Return original string if parsing fails
-      }
-    };
 
     // Replace JSON string fields with parsed objects
     Object.assign(parsed, {

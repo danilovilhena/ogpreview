@@ -10,11 +10,11 @@ export function getSupabase(): SupabaseClient<Database> {
     return supabaseInstance;
   }
 
-  const supabaseUrl = 'https://vlkrjactabvvaheluaij.supabase.co';
+  const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_KEY;
 
-  if (!supabaseKey) {
-    throw new Error('Missing required environment variable: SUPABASE_KEY');
+  if (!supabaseKey || !supabaseUrl) {
+    throw new Error('Missing required environment variable: SUPABASE_KEY or SUPABASE_URL');
   }
 
   supabaseInstance = createClient<Database>(supabaseUrl, supabaseKey);
@@ -24,6 +24,15 @@ export function getSupabase(): SupabaseClient<Database> {
 // Legacy function for compatibility
 export async function initDb(): Promise<SupabaseClient<Database>> {
   return getSupabase();
+}
+
+export function getSupabaseClient(): { success: true; supabase: SupabaseClient<Database> } | { success: false; error: string; status: number } {
+  try {
+    const supabase = getSupabase();
+    return { success: true, supabase };
+  } catch {
+    return { success: false, error: 'Database not available. Make sure Supabase is properly configured.', status: 503 };
+  }
 }
 
 // Database service functions
